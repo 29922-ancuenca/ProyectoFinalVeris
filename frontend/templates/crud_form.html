@@ -2,6 +2,9 @@
 {% block title %}{{ titulo }} - Veris{% endblock %}
 {% block body_class %}veris-crear-body{% endblock %}
 {% block content %}
+  {% if content_html is defined and content_html %}
+    {{ content_html|safe }}
+  {% else %}
   <div class="container my-4 veris-crear-container">
     <h2 class="veris-crear-title">{{ titulo }}</h2>
 
@@ -37,4 +40,5 @@
       </div>
     </form>
   </div>
+  {% endif %}
 {% endblock %}

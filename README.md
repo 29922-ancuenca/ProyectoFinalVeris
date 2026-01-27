@@ -14,3 +14,19 @@
 2) Levantar el servidor:
 
 `python backend/app.py`
+
+## Base de datos
+
+- Motor: MySQL
+- Base: `veris`
+- Credenciales por defecto en [backend/config.py](backend/config.py) (puedes sobreescribir con variables de entorno):
+	- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
+
+## Navegación CRUD (parámetro `d`)
+
+Las pantallas CRUD usan un parámetro `d` en la URL con formato `base64("op/id")`.
+
+- `new/0` crear
+- `act/<id>` editar
+- `det/<id>` detalle (solo lectura)
+- `del/<id>` eliminar

@@ -3,8 +3,7 @@ from pathlib import Path
 from flask import Flask
 
 from config import load_config
-from routes.crud_routes import register_crud_blueprints
-from routes.views import bp as views_bp
+from routes.crud_routes import bp as crud_bp
 
 
 def create_app():
@@ -17,8 +16,7 @@ def create_app():
 		static_url_path="/static",
 	)
 	load_config(app)
-	app.register_blueprint(views_bp)
-	register_crud_blueprints(app)
+	app.register_blueprint(crud_bp)
 
 	return app
 

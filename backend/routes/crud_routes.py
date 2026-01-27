@@ -1,126 +1,119 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from flask import Blueprint, current_app, render_template, request
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from database.connection import get_connection
 
-from database.connection import fetch_all
-from repositories.base_repo import BaseRepository
-from repositories.tables import RESOURCES, CrudResource
-
-
-def _infer_field_meta(key: str):
-    if key.lower() in {"diagnostico"}:
-        return ("text", True)
-    if "fecha" in key.lower():
-        return ("date", False)
-    if key.upper() in {"HI", "HF"} or "franja" in key.lower():
-        return ("time", False)
-    if "password" in key.lower():
-        return ("password", False)
-    if key.lower().endswith("id") or key.lower().startswith("id"):
-        return ("number", False)
-    if key.lower() in {"cedula", "edad", "cantidad", "estatura_cm"}:
-        return ("number", False)
-    if key.lower() in {"peso_kg"}:
-        return ("number", False)
-    return ("text", False)
+from models.consulta import Consulta
+from models.especialidad import Especialidad
+from models.medicamento import Medicamento
+from models.medico import Medico
+from models.paciente import Paciente
+from models.receta import Receta
+from models.rol import Rol
+from models.usuario import Usuario
 
 
-def _create_crud_blueprint(
-    resource: CrudResource,
-    repo: BaseRepository,
-):
-    cfg = repo.cfg
-    bp = Blueprint(resource.name, __name__, url_prefix=resource.url_prefix)
-
-    @bp.get("/")
-    def list_view():
-        if resource.list_query:
-            rows = fetch_all(current_app, resource.list_query)
-            columns = resource.list_columns or (list(rows[0].keys()) if rows else [])
-        else:
-            rows = repo.list_all()
-            columns = cfg.columns
-
-        return render_template(
-            "tabla.html",
-            titulo=resource.title,
-            columnas=columns,
-            datos=rows,
-            base_path=resource.url_prefix,
-            pk_name=cfg.pk,
-        )
-
-    @bp.get("/new")
-    def new_form():
-        fields = [c for c in cfg.columns if c != cfg.pk]
-        field_meta = {k: _infer_field_meta(k) for k in fields}
-        return render_template(
-            "crud_form.html",
-            titulo=f"Nuevo - {resource.title}",
-            base_path=resource.url_prefix,
-            pk_name=cfg.pk,
-            fields=fields,
-            field_meta=field_meta,
-            values={},
-        )
-
-    @bp.post("/new")
-    def create_action():
-        payload: Dict[str, Any] = {}
-        for key in cfg.columns:
-            if key == cfg.pk:
-                continue
-            payload[key] = request.form.get(key)
-        new_id = repo.create(payload)
-        flash(f"Creado correctamente ({cfg.pk}={new_id})", "success")
-        return redirect(url_for(f"{resource.name}.list_view"))
-
-    @bp.get("/<int:pk>/edit")
-    def edit_form(pk: int):
-        row = repo.get_by_id(pk)
-        if not row:
-            flash("Registro no encontrado", "danger")
-            return redirect(url_for(f"{resource.name}.list_view"))
-
-        fields = [c for c in cfg.columns if c != cfg.pk]
-        field_meta = {k: _infer_field_meta(k) for k in fields}
-        return render_template(
-            "crud_form.html",
-            titulo=f"Editar - {resource.title}",
-            base_path=resource.url_prefix,
-            pk_name=cfg.pk,
-            pk_value=pk,
-            fields=fields,
-            field_meta=field_meta,
-            values=row,
-        )
-
-    @bp.post("/<int:pk>/edit")
-    def update_action(pk: int):
-        payload: Dict[str, Any] = {}
-        for key in cfg.columns:
-            if key == cfg.pk:
-                continue
-            payload[key] = request.form.get(key)
-        repo.update(pk, payload)
-        flash("Actualizado correctamente", "success")
-        return redirect(url_for(f"{resource.name}.list_view"))
-
-    @bp.post("/<int:pk>/delete")
-    def delete_action(pk: int):
-        repo.delete(pk)
-        flash("Eliminado correctamente", "success")
-        return redirect(url_for(f"{resource.name}.list_view"))
-
-    return bp
+bp = Blueprint("crud", __name__)
 
 
-def register_crud_blueprints(app):
-    for resource in RESOURCES.values():
-        repo = BaseRepository(resource.table)
-        bp = _create_crud_blueprint(resource, repo)
-        app.register_blueprint(bp)
+def _render_crud_page(model, content_html: str):
+    return render_template(
+        "base.html",
+        navbar_html=model.navbar(),
+        content_html=content_html,
+        page_title=model.title,
+    )
 
-    return app
+
+def _handle_model(ModelClass):
+    """Manejador genérico para GET/POST usando navegación d=base64(op/id)."""
+
+    with get_connection(current_app) as cn:
+        model = ModelClass(cn)
+
+        if request.method == "POST":
+            msg = model.save(request.form)
+            return _render_crud_page(model, msg + model.get_list())
+
+        d = request.args.get("d", "")
+        if d:
+            try:
+                op, id_ = model._d_decode(d)
+            except Exception:
+                return _render_crud_page(model, model._msg_error("Parámetro d inválido") + model.get_list())
+
+            if op == "new":
+                return _render_crud_page(model, model.get_form(0))
+            if op == "act":
+                return _render_crud_page(model, model.get_form(id_))
+            if op == "det":
+                return _render_crud_page(model, model.get_detail(id_))
+            if op == "del":
+                msg = model.delete(id_)
+                return _render_crud_page(model, msg + model.get_list())
+
+            return _render_crud_page(model, model._msg_error("Operación no permitida") + model.get_list())
+
+        return _render_crud_page(model, model.get_list())
+
+
+@bp.get("/")
+def index():
+    # Landing simple (usa templates existentes)
+    return render_template("index.html")
+
+
+@bp.route("/login", methods=["GET", "POST"], strict_slashes=False)
+def login():
+    if request.method == "POST":
+        # Demo: autenticación real queda fuera del alcance del CRUD
+        return render_template("login.html")
+    return render_template("login.html")
+
+
+@bp.route("/register", methods=["GET", "POST"], strict_slashes=False)
+def register():
+    if request.method == "POST":
+        return render_template("register.html")
+    return render_template("register.html")
+
+
+@bp.route("/usuarios", methods=["GET", "POST"], strict_slashes=False)
+def usuarios():
+    return _handle_model(Usuario)
+
+
+@bp.route("/roles", methods=["GET", "POST"], strict_slashes=False)
+def roles():
+    return _handle_model(Rol)
+
+
+@bp.route("/pacientes", methods=["GET", "POST"], strict_slashes=False)
+def pacientes():
+    return _handle_model(Paciente)
+
+
+@bp.route("/medicos", methods=["GET", "POST"], strict_slashes=False)
+def medicos():
+    return _handle_model(Medico)
+
+
+@bp.route("/especialidades", methods=["GET", "POST"], strict_slashes=False)
+def especialidades():
+    return _handle_model(Especialidad)
+
+
+@bp.route("/medicamentos", methods=["GET", "POST"], strict_slashes=False)
+def medicamentos():
+    return _handle_model(Medicamento)
+
+
+@bp.route("/consultas", methods=["GET", "POST"], strict_slashes=False)
+def consultas():
+    return _handle_model(Consulta)
+
+
+@bp.route("/recetas", methods=["GET", "POST"], strict_slashes=False)
+def recetas():
+    return _handle_model(Receta)
