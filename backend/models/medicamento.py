@@ -106,7 +106,7 @@ class Medicamento:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        headers = ["IdMedicamento", "Nombre", "Tipo", "Acciones"]
+        headers = ["Nombre", "Tipo", "Acciones"]
         thead = "".join(f"<th>{h}</th>" for h in headers)
 
         tbody = ""
@@ -117,7 +117,6 @@ class Medicamento:
             d_del = self._d_encode("del", pk)
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
                 f"<td>{html.escape(str(r.get('Tipo','')))}</td>"
                 "<td>"

@@ -25,8 +25,19 @@ class Medico:
         self.IdUsuario: int | None = None
         self.Foto: str = ""
 
-        self.sql_list = "SELECT IdMedico, Nombre, Especialidad, IdUsuario, Foto FROM medicos ORDER BY IdMedico DESC"
-        self.sql_detail = "SELECT IdMedico, Nombre, Especialidad, IdUsuario, Foto FROM medicos WHERE IdMedico=%s"
+        # JOIN para mostrar el nombre de la especialidad en lugar del id
+        self.sql_list = (
+            "SELECT m.IdMedico, m.Nombre, e.Descripcion AS Especialidad, m.IdUsuario, m.Foto "
+            "FROM medicos m "
+            "LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+            "ORDER BY m.IdMedico DESC"
+        )
+        self.sql_detail = (
+            "SELECT m.IdMedico, m.Nombre, e.Descripcion AS Especialidad, m.IdUsuario, m.Foto "
+            "FROM medicos m "
+            "LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+            "WHERE m.IdMedico=%s"
+        )
         self.sql_insert = "INSERT INTO medicos(Nombre, Especialidad, IdUsuario, Foto) VALUES(%s,%s,%s,%s)"
         self.sql_update = "UPDATE medicos SET Nombre=%s, Especialidad=%s, IdUsuario=%s, Foto=%s WHERE IdMedico=%s"
         self.sql_delete = "DELETE FROM medicos WHERE IdMedico=%s"
@@ -108,7 +119,7 @@ class Medico:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        headers = ["IdMedico", "Nombre", "Especialidad", "IdUsuario", "Foto", "Acciones"]
+        headers = ["Nombre", "Especialidad", "Foto", "Acciones"]
         thead = "".join(f"<th>{h}</th>" for h in headers)
 
         tbody = ""
@@ -128,10 +139,8 @@ class Medico:
 
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
                 f"<td>{html.escape(str(r.get('Especialidad','')))}</td>"
-                f"<td>{html.escape(str(r.get('IdUsuario','')))}</td>"
                 f"<td>{foto_html}</td>"
                 "<td>"
                 f"<a class='btn btn-sm btn-primary me-1' href='{self.path}?d={d_act}'>Editar</a>"

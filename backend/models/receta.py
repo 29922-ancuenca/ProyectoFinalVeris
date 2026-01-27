@@ -24,8 +24,23 @@ class Receta:
         self.IdMedicamento: int | None = None
         self.Cantidad: int | None = None
 
-        self.sql_list = "SELECT IdReceta, IdConsulta, IdMedicamento, Cantidad FROM recetas ORDER BY IdReceta DESC"
-        self.sql_detail = "SELECT IdReceta, IdConsulta, IdMedicamento, Cantidad FROM recetas WHERE IdReceta=%s"
+        # JOINs para mostrar el diagnóstico de la consulta y el nombre del medicamento
+        self.sql_list = (
+            "SELECT r.IdReceta, r.IdConsulta, r.IdMedicamento, r.Cantidad, "
+            "c.Diagnostico AS Consulta, m.Nombre AS Medicamento "
+            "FROM recetas r "
+            "LEFT JOIN consultas c ON r.IdConsulta = c.IdConsulta "
+            "LEFT JOIN medicamentos m ON r.IdMedicamento = m.IdMedicamento "
+            "ORDER BY r.IdReceta DESC"
+        )
+        self.sql_detail = (
+            "SELECT r.IdReceta, r.IdConsulta, r.IdMedicamento, r.Cantidad, "
+            "c.Diagnostico AS Consulta, m.Nombre AS Medicamento "
+            "FROM recetas r "
+            "LEFT JOIN consultas c ON r.IdConsulta = c.IdConsulta "
+            "LEFT JOIN medicamentos m ON r.IdMedicamento = m.IdMedicamento "
+            "WHERE r.IdReceta=%s"
+        )
         self.sql_insert = "INSERT INTO recetas(IdConsulta, IdMedicamento, Cantidad) VALUES(%s,%s,%s)"
         self.sql_update = "UPDATE recetas SET IdConsulta=%s, IdMedicamento=%s, Cantidad=%s WHERE IdReceta=%s"
         self.sql_delete = "DELETE FROM recetas WHERE IdReceta=%s"
@@ -107,7 +122,7 @@ class Receta:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        headers = ["IdReceta", "IdConsulta", "IdMedicamento", "Cantidad", "Acciones"]
+        headers = ["Consulta", "Medicamento", "Cantidad", "Acciones"]
         thead = "".join(f"<th>{h}</th>" for h in headers)
 
         tbody = ""
@@ -118,9 +133,8 @@ class Receta:
             d_del = self._d_encode("del", pk)
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
-                f"<td>{html.escape(str(r.get('IdConsulta','')))}</td>"
-                f"<td>{html.escape(str(r.get('IdMedicamento','')))}</td>"
+                f"<td>{html.escape(str(r.get('Consulta','')))}</td>"
+                f"<td>{html.escape(str(r.get('Medicamento','')))}</td>"
                 f"<td>{html.escape(str(r.get('Cantidad','')))}</td>"
                 "<td>"
                 f"<a class='btn btn-sm btn-primary me-1' href='{self.path}?d={d_act}'>Editar</a>"

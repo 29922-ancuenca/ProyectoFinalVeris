@@ -132,8 +132,6 @@ class Paciente:
 
         d_new = self._d_encode("new", 0)
         headers = [
-            "IdPaciente",
-            "IdUsuario",
             "Nombre",
             "Cedula",
             "Edad",
@@ -163,8 +161,6 @@ class Paciente:
 
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
-                f"<td>{html.escape(str(r.get('IdUsuario','')))}</td>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
                 f"<td>{html.escape(str(r.get('Cedula','')))}</td>"
                 f"<td>{html.escape(str(r.get('Edad','')))}</td>"

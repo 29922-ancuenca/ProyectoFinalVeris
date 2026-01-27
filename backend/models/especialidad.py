@@ -108,7 +108,7 @@ class Especialidad:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        headers = ["IdEsp", "Descripcion", "Dias", "Franja_HI", "Franja_HF", "Acciones"]
+        headers = ["Descripcion", "Dias", "Franja_HI", "Franja_HF", "Acciones"]
         thead = "".join(f"<th>{h}</th>" for h in headers)
 
         tbody = ""
@@ -119,7 +119,6 @@ class Especialidad:
             d_del = self._d_encode("del", pk)
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
                 f"<td>{html.escape(str(r.get('Descripcion','')))}</td>"
                 f"<td>{html.escape(str(r.get('Dias','')))}</td>"
                 f"<td>{html.escape(str(r.get('Franja_HI','')))}</td>"

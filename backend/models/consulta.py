@@ -27,13 +27,24 @@ class Consulta:
         self.HF: str = ""
         self.Diagnostico: str = ""
 
+        # JOINs para mostrar los nombres de médico y paciente en lugar de sus IDs
         self.sql_list = (
-            "SELECT IdConsulta, IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico "
-            "FROM consultas ORDER BY IdConsulta DESC"
+            "SELECT c.IdConsulta, c.IdMedico, c.IdPaciente, "
+            "m.Nombre AS NombreMedico, p.Nombre AS NombrePaciente, "
+            "c.FechaConsulta, c.HI, c.HF, c.Diagnostico "
+            "FROM consultas c "
+            "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
+            "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
+            "ORDER BY c.IdConsulta DESC"
         )
         self.sql_detail = (
-            "SELECT IdConsulta, IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico "
-            "FROM consultas WHERE IdConsulta=%s"
+            "SELECT c.IdConsulta, c.IdMedico, c.IdPaciente, "
+            "m.Nombre AS NombreMedico, p.Nombre AS NombrePaciente, "
+            "c.FechaConsulta, c.HI, c.HF, c.Diagnostico "
+            "FROM consultas c "
+            "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
+            "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
+            "WHERE c.IdConsulta=%s"
         )
         self.sql_insert = (
             "INSERT INTO consultas(IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico) "
@@ -133,7 +144,7 @@ class Consulta:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        headers = ["IdConsulta", "IdMedico", "IdPaciente", "FechaConsulta", "HI", "HF", "Diagnostico", "Acciones"]
+        headers = ["Médico", "Paciente", "FechaConsulta", "HI", "HF", "Diagnostico", "Acciones"]
         thead = "".join(f"<th>{h}</th>" for h in headers)
 
         tbody = ""
@@ -145,9 +156,8 @@ class Consulta:
             diag = str(r.get("Diagnostico") or "")
             tbody += (
                 "<tr>"
-                f"<td>{pk}</td>"
-                f"<td>{html.escape(str(r.get('IdMedico','')))}</td>"
-                f"<td>{html.escape(str(r.get('IdPaciente','')))}</td>"
+                f"<td>{html.escape(str(r.get('NombreMedico','')))}</td>"
+                f"<td>{html.escape(str(r.get('NombrePaciente','')))}</td>"
                 f"<td>{html.escape(str(r.get('FechaConsulta','')))}</td>"
                 f"<td>{html.escape(str(r.get('HI','')))}</td>"
                 f"<td>{html.escape(str(r.get('HF','')))}</td>"

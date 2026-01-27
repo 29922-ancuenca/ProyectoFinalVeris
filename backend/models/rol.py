@@ -106,7 +106,7 @@ class Rol:
         cur.close()
 
         d_new = self._d_encode("new", 0)
-        header = "".join(f"<th>{h}</th>" for h in ["IdRol", "Nombre", "Accion", "Acciones"])
+        header = "".join(f"<th>{h}</th>" for h in ["Nombre", "Accion", "Acciones"])
         body = ""
         for r in rows:
             pk = int(r["IdRol"])
@@ -115,7 +115,6 @@ class Rol:
             d_del = self._d_encode("del", pk)
             body += (
                 "<tr>"
-                f"<td>{pk}</td>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
                 f"<td>{html.escape(str(r.get('Accion','')))}</td>"
                 "<td>"

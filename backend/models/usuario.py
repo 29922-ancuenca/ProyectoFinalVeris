@@ -25,9 +25,19 @@ class Usuario:
         self.Password: str = ""
         self.Rol: str = ""
 
-        # SQL propio
-        self.sql_list = "SELECT IdUsuario, Nombre, Rol FROM usuarios ORDER BY IdUsuario DESC"
-        self.sql_detail = "SELECT IdUsuario, Nombre, Password, Rol FROM usuarios WHERE IdUsuario=%s"
+        # SQL propio (JOIN para mostrar el nombre del rol)
+        self.sql_list = (
+            "SELECT u.IdUsuario, u.Nombre, u.Rol, r.Nombre AS NombreRol "
+            "FROM usuarios u "
+            "LEFT JOIN roles r ON u.Rol = r.IdRol "
+            "ORDER BY u.IdUsuario DESC"
+        )
+        self.sql_detail = (
+            "SELECT u.IdUsuario, u.Nombre, u.Password, u.Rol, r.Nombre AS NombreRol "
+            "FROM usuarios u "
+            "LEFT JOIN roles r ON u.Rol = r.IdRol "
+            "WHERE u.IdUsuario=%s"
+        )
         self.sql_insert = "INSERT INTO usuarios(Nombre, Password, Rol) VALUES(%s,%s,%s)"
         self.sql_update = "UPDATE usuarios SET Nombre=%s, Password=%s, Rol=%s WHERE IdUsuario=%s"
         self.sql_delete = "DELETE FROM usuarios WHERE IdUsuario=%s"
@@ -113,7 +123,7 @@ class Usuario:
 
         d_new = self._d_encode("new", 0)
         header = "".join(
-            f"<th>{h}</th>" for h in ["IdUsuario", "Nombre", "Rol", "Acciones"]
+            f"<th>{h}</th>" for h in ["Nombre", "Rol", "Acciones"]
         )
         body = ""
         for r in rows:
@@ -123,9 +133,8 @@ class Usuario:
             d_del = self._d_encode("del", pk)
             body += (
                 "<tr>"
-                f"<td>{pk}</td>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
-                f"<td>{html.escape(str(r.get('Rol','')))}</td>"
+                f"<td>{html.escape(str(r.get('NombreRol','')))}</td>"
                 "<td>"
                 f"<a class='btn btn-sm btn-primary me-1' href='{self.path}?d={d_act}'>Editar</a>"
                 f"<a class='btn btn-sm btn-outline-secondary me-1' href='{self.path}?d={d_det}'>Detalle</a>"
