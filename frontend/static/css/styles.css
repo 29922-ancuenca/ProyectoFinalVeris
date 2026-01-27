@@ -1,0 +1,749 @@
+body {
+  background-color: #f9fbff;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.navbar-brand img {
+  height: 45px;
+}
+
+.navbar .slogan {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.nav-link {
+  color: #1a73e8 !important;
+  font-weight: 500;
+  transition: color 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+  color: #0a58ca !important;
+}
+
+.navbar-toggler {
+  border: none;
+  box-shadow: none;
+  outline: none;
+  background-color: transparent;
+}
+
+
+.btn-primary {
+  background-color: #1a73e8;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #0d5bd7;
+}
+
+.btn-outline-primary {
+  border: 1px solid #1a73e8;
+  color: #1a73e8;
+}
+
+.btn-outline-primary:hover {
+  background-color: #1a73e8;
+  color: #fff;
+}
+
+.dropdown-menu {
+  border-radius: 0.5rem;
+  border: 1px solid #e0e0e0;
+}
+
+.dropdown-item:hover {
+  background-color: #e8f0fe;
+}
+
+.carousel-img {
+  height: 350px;
+  object-fit: cover;
+}
+
+/* === FOOTER CON REDES === */
+
+/* Franja superior */
+.footer-top {
+  background-color: #1a73e8; /* azul claro */
+  color: #fff;
+}
+
+.footer-top .social-icon {
+  color: #fff;
+  font-size: 1.5rem;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.footer-top .social-icon:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+/* Franja inferior */
+.footer-bottom {
+  background-color: #0b2347; /* azul oscuro */
+  font-size: 0.9rem;
+}
+
+/* === Mantener footer siempre al fondo === */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* fuerza al body a ocupar toda la pantalla */
+}
+
+main {
+  flex: 1; /* ocupa todo el espacio libre, empuja el footer hacia abajo */
+}
+
+/* Asegura que el footer no se superponga en móvil */
+footer {
+  flex-shrink: 0;
+}
+
+/*ESTILOS LOGIN*/
+/* ===== ESTILO LOGIN VERIS UNIFICADO ===== */
+
+.veris-login-body {
+  background: linear-gradient(to bottom, #f9fbff 0%, #ffffff 100%);
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar superior */
+.veris-login-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0.5rem 0;
+}
+
+.veris-login-logo {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.veris-login-slogan {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+/* Centrar el contenido */
+.veris-login-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Caja del formulario */
+.veris-login-section {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  width: 100%;
+}
+
+/* Títulos */
+.veris-login-title {
+  color: #1a73e8;
+  font-weight: 700;
+}
+
+.veris-login-subtitle {
+  color: #333;
+  font-size: 1rem;
+}
+
+/* Etiquetas y campos */
+.veris-login-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.veris-login-input {
+  background-color: #f2f4f8;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  transition: all 0.2s ease-in-out;
+}
+
+.veris-login-input:focus {
+  outline: 2px solid #1a73e8;
+  background-color: #fff;
+}
+
+/* Checkbox */
+.veris-login-check-label {
+  color: #333;
+}
+
+/* Botón principal */
+.veris-login-btn {
+  background-color: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 600;
+  box-shadow: 0 3px 6px rgba(26, 115, 232, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.veris-login-btn:hover {
+  background-color: #0d5bd7;
+}
+
+/* Enlaces */
+.veris-login-link {
+  color: #1a73e8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.veris-login-link:hover {
+  text-decoration: underline;
+}
+
+/* Social login */
+.veris-login-social-title {
+  color: #333333;
+  font-weight: 600;
+}
+
+.veris-login-social-btn {
+  background: #f9fbff;
+  color: #333;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 0;
+  font-weight: 600;
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.1),
+              -3px -3px 8px rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.veris-login-social-btn:hover {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.1),
+              inset -3px -3px 6px rgba(255, 255, 255, 0.8);
+  color: #1a73e8;
+}
+
+/* Footer */
+.veris-login-footer {
+  background-color: #0b2047;
+  color: #fff;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 0.9rem;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .veris-login-section {
+    padding: 1.5rem;
+  }
+}
+
+/*Estilos registro*/
+/* =========================================================
+   ESTILOS FORMULARIO DE REGISTRO (register.html)
+   ========================================================= */
+
+.veris-register-body {
+  background-color: #f9fbff;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.veris-register-container {
+  max-width: 700px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem 3rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.veris-register-title {
+  text-align: center;
+  color: #1a73e8;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.veris-register-subtitle {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.veris-register-divider {
+  margin-bottom: 1.5rem;
+  opacity: 0.3;
+}
+
+.veris-register-input {
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.veris-register-input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+.veris-register-btn {
+  background-color: #1a73e8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 0;
+  width: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
+}
+
+.veris-register-btn:hover {
+  background-color: #1669d6;
+  box-shadow: 0 6px 12px rgba(26, 115, 232, 0.3);
+}
+
+.veris-register-label {
+  font-weight: 600;
+}
+
+.veris-register-error {
+  font-size: 0.85rem;
+}
+
+.veris-register-validation {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/*ESTILOS REGISTER*/
+/* =========================================================
+   ESTILOS REGISTER.HTML
+   ========================================================= */
+
+.veris-register-body {
+  background-color: #f9fbff;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* NAVBAR - versión corregida para ocupar todo el ancho */
+.veris-login-navbar {
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+  position: relative;
+  top: 0;
+  left: 0;
+  padding: 0.5rem 1rem;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.veris-login-navbar .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.veris-login-logo {
+  height: 40px;
+}
+
+.veris-login-slogan {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.veris-login-footer {
+  background-color: #0b2047;
+  color: #fff;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 0.9rem;
+  width: 100%;
+  margin-top: auto; /* ✅ Se coloca al fondo del flujo normal */
+  position: relative; /* ❌ Quita el fixed */
+}
+
+
+/* FORMULARIO */
+/* Ajusta el espaciado inferior del formulario para no chocar con el footer */
+.veris-register-container {
+  flex: 1;
+  max-width: 700px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  margin-bottom: 80px; /* 🔹 Agrega espacio respecto al footer */
+}
+
+/* Si quieres un poco más de aire, usa 6rem o 7rem */
+
+
+.veris-register-title {
+  text-align: center;
+  color: #1a73e8;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.veris-register-subtitle {
+  text-align: center;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.veris-register-divider {
+  margin-bottom: 1.5rem;
+  opacity: 0.3;
+}
+
+.veris-register-input {
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+.veris-register-input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+}
+
+.veris-register-btn {
+  background-color: #1a73e8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 0;
+  width: 60%;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
+}
+
+.veris-register-btn:hover {
+  background-color: #1669d6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(26, 115, 232, 0.3);
+}
+
+/*ESTILOS CREAR*/
+/* ================================
+   ESTILOS PÁGINA CREAR PACIENTE
+   ================================ */
+
+/* Estructura general */
+
+/* NAVBAR */
+.veris-crear-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  width: 100%;
+  position: relative;
+  top: 0;
+  left: 0;
+  padding: 0.7rem 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+}
+
+.veris-crear-navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.veris-crear-logo {
+  height: 45px;
+  width: auto;
+}
+
+.veris-crear-slogan {
+  font-size: 0.85rem;
+  color: #333;
+  margin-left: 0.5rem;
+}
+
+/* ====== CONTENEDOR GENERAL ====== */
+.veris-crear-container {
+  width: 100%;
+  max-width: 500px;              /* 🔹 Reduce el ancho total */
+  margin: 4rem auto;             /* 🔹 Centra el formulario vertical y horizontalmente */
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ====== TÍTULOS ====== */
+.veris-crear-title {
+  text-align: center;
+  color: #1a73e8;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.veris-crear-subtitle {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* ====== FORMULARIO ====== */
+.veris-crear-form {
+  width: 100%;
+}
+
+.veris-crear-form label {
+  font-weight: 600;
+  color: #333;
+}
+
+.veris-crear-form input,
+.veris-crear-form select {
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.veris-crear-form input:focus,
+.veris-crear-form select:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.15);
+  outline: none;
+}
+
+/* ====== BOTÓN CREAR ====== */
+.veris-crear-button-group {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.veris-crear-btn {
+  background-color: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  width: 60%;
+  max-width: 250px;
+  text-align: center;
+}
+
+.veris-crear-btn:hover {
+  background-color: #0d5bd7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.2);
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 768px) {
+  .veris-crear-container {
+    max-width: 90%;
+    padding: 1.5rem;
+  }
+
+  .veris-crear-btn {
+    width: 80%;
+  }
+}
+
+
+/* FOOTER */
+.veris-crear-footer {
+  background-color: #0b2047;
+  color: #fff;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 0.9rem;
+  width: 100%;
+  margin-top: auto;
+  position: relative;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* RESPONSIVIDAD */
+@media (max-width: 768px) {
+  .veris-crear-container {
+    padding: 2rem 1.5rem;
+    margin: 2rem 1rem 5rem 1rem;
+  }
+
+  .veris-crear-label {
+    text-align: left;
+    margin-bottom: 0.3rem;
+  }
+
+  .veris-crear-btn {
+    width: 100%;
+  }
+}
+
+/*ESTILOS TABLAS*/
+/* ======== ESTILOS GENERALES ======== */
+.veris-tabla-body {
+  background-color: #f9fbff;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ======== CONTENEDOR PRINCIPAL ======== */
+.veris-tabla-container {
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  max-width: 1100px;
+  margin: 3rem auto;
+  overflow-x: auto;
+}
+
+/* ======== TÍTULO ======== */
+.veris-tabla-title {
+  text-align: center;
+  color: #1a73e8;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+/* ======== BOTÓN CREAR NUEVO ======== */
+.veris-tabla-actions {
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.veris-tabla-btn-crear {
+  background-color: #1a73e8;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.veris-tabla-btn-crear:hover {
+  background-color: #051630;
+  box-shadow: 0 3px 10px rgba(26, 115, 232, 0.3);
+}
+
+/* ======== TABLA ======== */
+.veris-tabla {
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.veris-tabla-thead {
+  background-color: #a10c48;
+  color: #fff;
+  font-weight: 600;
+}
+
+.veris-tabla tbody tr:hover {
+  background-color: #e8f0fe;
+  transition: background 0.3s ease;
+}
+
+/* ======== IMÁGENES ======== */
+.veris-tabla-img {
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+/* ======== ACCIONES ======== */
+.veris-tabla-acciones {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.veris-tabla-btn {
+  border-radius: 6px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.veris-tabla-btn.editar {
+  border: 1px solid #1a73e8;
+  color: #1a73e8;
+}
+.veris-tabla-btn.editar:hover {
+  background-color: #1a73e8;
+  color: #fff;
+}
+
+.veris-tabla-btn.detalles {
+  border: 1px solid #17a2b8;
+  color: #17a2b8;
+}
+.veris-tabla-btn.detalles:hover {
+  background-color: #17a2b8;
+  color: #fff;
+}
+
+.veris-tabla-btn.eliminar {
+  border: 1px solid #dc3545;
+  color: #dc3545;
+}
+.veris-tabla-btn.eliminar:hover {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* ======== RESPONSIVE ======== */
+@media (max-width: 992px) {
+  .veris-tabla-container {
+    padding: 1.5rem;
+  }
+
+  .veris-tabla {
+    font-size: 0.85rem;
+  }
+
+  .veris-tabla-btn {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+  }
+}

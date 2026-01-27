@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Registrarse - Proyecto VERIS{% endblock %}
+{% block body_class %}veris-register-body{% endblock %}
+
+{% block nav %}
+<nav class="veris-login-navbar">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <a href="{{ url_for('views.index') }}">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="VERIS" class="veris-login-logo" style="height: 35px; width: auto;">
+      </a>
+      <span class="veris-login-slogan">Hacemos <strong>fácil cuidarte</strong></span>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<main class="container my-5 veris-register-container" aria-labelledby="title">
+  <h2 id="title" class="veris-register-title">Registrarse</h2>
+
+  <form action="{{ url_for('views.register') }}" method="post" role="form" class="veris-register-form">
+    <h4 class="veris-register-subtitle">Cree una cuenta nueva</h4>
+    <hr class="veris-register-divider" />
+
+    <div class="row mb-3 align-items-center veris-register-group">
+      <label for="UserName" class="col-md-3 col-form-label veris-register-label">Nombre de usuario</label>
+      <div class="col-md-9 veris-register-input-col">
+        <input type="text" id="UserName" name="UserName" class="form-control veris-register-input" required />
+      </div>
+    </div>
+
+    <div class="row mb-3 align-items-center veris-register-group">
+      <label for="Email" class="col-md-3 col-form-label veris-register-label">Correo electrónico</label>
+      <div class="col-md-9 veris-register-input-col">
+        <input type="email" id="Email" name="Email" class="form-control veris-register-input" required />
+      </div>
+    </div>
+
+    <div class="row mb-3 align-items-center veris-register-group">
+      <label for="Password" class="col-md-3 col-form-label veris-register-label">Contraseña</label>
+      <div class="col-md-9 veris-register-input-col">
+        <input type="password" id="Password" name="Password" class="form-control veris-register-input" required />
+      </div>
+    </div>
+
+    <div class="row mb-3 align-items-center veris-register-group">
+      <label for="ConfirmPassword" class="col-md-3 col-form-label veris-register-label">Confirmar contraseña</label>
+      <div class="col-md-9 veris-register-input-col">
+        <input type="password" id="ConfirmPassword" name="ConfirmPassword" class="form-control veris-register-input" required />
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn veris-register-btn">Registrarse</button>
+    </div>
+
+    <p class="text-center mt-3">
+      <a class="veris-login-link" href="{{ url_for('views.login') }}">Ya tengo cuenta</a>
+    </p>
+  </form>
+</main>
+{% endblock %}
+
+{% block footer %}
+<footer class="veris-login-footer">
+  © 2025 - Proyecto VERIS
+</footer>
+{% endblock %}
