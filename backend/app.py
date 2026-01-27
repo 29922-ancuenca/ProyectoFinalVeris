@@ -2,7 +2,7 @@ from pathlib import Path
 
 from flask import Flask
 
-from config import load_config
+from database.config import load_config
 from routes.crud_routes import bp as crud_bp
 
 

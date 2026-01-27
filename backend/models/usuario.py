@@ -44,30 +44,47 @@ class Usuario:
 
     # ----------------------------- UI helpers ----------------------------------
     def navbar(self) -> str:
-        links = [
-            ("Inicio", "/"),
-            ("Pacientes", "/pacientes"),
-            ("Médicos", "/medicos"),
-            ("Especialidades", "/especialidades"),
-            ("Medicamentos", "/medicamentos"),
-            ("Consultas", "/consultas"),
-            ("Recetas", "/recetas"),
-            ("Roles", "/roles"),
-            ("Usuarios", "/usuarios"),
-        ]
-        items = "".join(
-            f'<li class="nav-item"><a class="nav-link" href="{html.escape(href)}">{html.escape(text)}</a></li>'
-            for text, href in links
+        items = (
+            '<li class="nav-item"><a class="nav-link" href="/pacientes">'
+            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/medicos">'
+            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
+            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
+            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/consultas">'
+            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/recetas">'
+            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/roles">'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<li class="nav-item"><a class="nav-link" href="/usuarios">'
+            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
             '<div class="container-fluid px-4">'
-            '<a class="navbar-brand" href="/">VERIS</a>'
+            '<a class="navbar-brand d-flex flex-column align-items-start" href="/">'
+            '<img src="/static/img/logo.png" alt="Logo Veris" class="img-fluid mb-1" '
+            'style="height: 35px; width: auto;">'
+            "<span class='slogan'>Hacemos <strong>fácil cuidarte</strong></span>"
+            "</a>"
             '<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal"'
             ' aria-controls="menuPrincipal" aria-expanded="false" aria-label="Alternar navegación">'
             '<span class="navbar-toggler-icon"></span></button>'
-            '<div class="collapse navbar-collapse" id="menuPrincipal">'
-            f'<ul class="navbar-nav me-auto mb-2 mb-lg-0">{items}</ul>'
+            '<div class="collapse navbar-collapse justify-content-between" id="menuPrincipal">'
+            '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
+            f"{items}"
+            "</ul>"
+            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
+            '<a href="/login" class="btn btn-primary btn-sm me-3">'
+            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
+            "</a>"
+            '<a href="/register" class="btn btn-outline-primary btn-sm">'
+            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
+            "</a>"
+            "</div>"
             "</div></div></nav>"
         )
 
@@ -118,12 +135,16 @@ class Usuario:
             )
 
         return (
-            f"<h2 class='mb-3'>{html.escape(self.title)}</h2>"
-            f"<p><a class='btn btn-success' href='{self.path}?d={d_new}'>Nuevo</a></p>"
-            "<table class='table table-bordered table-striped'>"
-            f"<thead><tr>{header}</tr></thead>"
-            f"<tbody>{body}</tbody>"
+            "<main class='container my-4 veris-tabla-container'>"
+            f"<h2 class='veris-tabla-title'>{html.escape(self.title)}</h2>"
+            f"<p class='veris-tabla-actions'><a class='btn veris-tabla-btn-crear' href='{self.path}?d={d_new}'>Crear nuevo</a></p>"
+            "<div class='veris-tabla-wrapper'>"
+            "<table class='table veris-tabla table-bordered table-striped'>"
+            f"<thead class='veris-tabla-thead'><tr>{header}</tr></thead>"
+            f"<tbody class='veris-tabla-body-content'>{body}</tbody>"
             "</table>"
+            "</div>"
+            "</main>"
         )
 
     def get_form(self, id: int = 0) -> str:
