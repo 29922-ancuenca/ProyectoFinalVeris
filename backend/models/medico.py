@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import base64
 import html
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+from flask import current_app, request
+from werkzeug.utils import secure_filename
 
 
 class Medico:
@@ -33,7 +37,8 @@ class Medico:
             "ORDER BY m.IdMedico DESC"
         )
         self.sql_detail = (
-            "SELECT m.IdMedico, m.Nombre, e.Descripcion AS Especialidad, m.IdUsuario, m.Foto "
+            "SELECT m.IdMedico, m.Nombre, m.Especialidad AS IdEsp, "
+            "e.Descripcion AS Especialidad, m.IdUsuario, m.Foto "
             "FROM medicos m "
             "LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
             "WHERE m.IdMedico=%s"
@@ -54,21 +59,11 @@ class Medico:
     def navbar(self) -> str:
         items = (
             '<li class="nav-item"><a class="nav-link" href="/pacientes">'
-            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/medicos">'
-            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
-            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
-            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/consultas">'
-            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/recetas">'
-            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/roles">'
-            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/usuarios">'
-            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
@@ -85,14 +80,6 @@ class Medico:
             '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
             f"{items}"
             "</ul>"
-            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
-            '<a href="/login" class="btn btn-primary btn-sm me-3">'
-            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
-            "</a>"
-            '<a href="/register" class="btn btn-outline-primary btn-sm">'
-            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
-            "</a>"
-            "</div>"
             "</div></div></nav>"
         )
 
@@ -166,8 +153,6 @@ class Medico:
     def get_form(self, id: int = 0) -> str:
         is_new = id == 0
         op = "new" if is_new else "act"
-        disabled_pk = (not is_new)
-
         values = {"IdMedico": "", "Nombre": "", "Especialidad": "", "IdUsuario": "", "Foto": ""}
         if not is_new:
             cur = self.cn.cursor(dictionary=True)
@@ -176,21 +161,68 @@ class Medico:
             cur.close()
             if not row:
                 return self._msg_error("Registro no encontrado")
-            for k in values:
-                values[k] = "" if row.get(k) is None else str(row.get(k))
+            values["IdMedico"] = "" if row.get("IdMedico") is None else str(row.get("IdMedico"))
+            values["Nombre"] = "" if row.get("Nombre") is None else str(row.get("Nombre"))
+            # Guardamos el id de especialidad (IdEsp) para el select
+            values["Especialidad"] = "" if row.get("IdEsp") is None else str(row.get("IdEsp"))
+            values["IdUsuario"] = "" if row.get("IdUsuario") is None else str(row.get("IdUsuario"))
+            values["Foto"] = "" if row.get("Foto") is None else str(row.get("Foto"))
+
+        # Cargar especialidades para el select (mostrar nombre, guardar id)
+        cur = self.cn.cursor(dictionary=True)
+        cur.execute("SELECT IdEsp, Descripcion FROM especialidades ORDER BY Descripcion")
+        especialidades: List[Dict[str, Any]] = cur.fetchall() or []
+        cur.close()
 
         d = self._d_encode(op, id)
         form = ""
-        form += self._input("IdMedico", "IdMedico", values["IdMedico"], disabled_pk, "number")
+        # No mostrar IdMedico ni IdUsuario en el formulario (se manejan internamente)
+        if values["IdUsuario"]:
+            form += (
+                f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
+            )
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
-        form += self._input("Especialidad", "Especialidad", values["Especialidad"], False)
-        form += self._input("IdUsuario", "IdUsuario", values["IdUsuario"], False, "number")
-        form += self._input("Foto", "Foto (archivo en static/img/usuarios)", values["Foto"], False)
+        # Selector de especialidad por nombre (value = id)
+        form += "<div class='mb-3'>"
+        form += "<label class='form-label' for='Especialidad'>Especialidad</label>"
+        form += "<select class='form-select' id='Especialidad' name='Especialidad'>"
+        for e in especialidades:
+            eid = str(e.get("IdEsp", ""))
+            selected = " selected" if eid == values["Especialidad"] else ""
+            form += (
+                f"<option value='{html.escape(eid)}'{selected}>"
+                f"{html.escape(str(e.get('Descripcion', '')))}"
+                "</option>"
+            )
+        form += "</select></div>"
+
+        # Campo para subir nueva foto (input file en lugar del nombre)
+        if values["Foto"]:
+            form += (
+                "<div class='mb-3'>"
+                "<label class='form-label'>Foto actual</label>"
+                f"<div><img src='/static/img/usuarios/{html.escape(values['Foto'])}' "
+                "class='img-thumbnail' style='max-width: 100px;' "
+                "onerror=\"this.style.display='none'\" /></div>"
+                "</div>"
+            )
+
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Foto'>Nueva foto</label>"
+            "<input class='form-control' id='Foto' name='Foto' type='file' accept='image/*' />"
+            "</div>"
+        )
+
+        # Mantener el nombre de la foto actual si no se sube una nueva
+        form += (
+            f"<input type='hidden' name='FotoActual' value='{html.escape(values['Foto'])}' />"
+        )
 
         title = "Nuevo Médico" if is_new else f"Actualizar Médico #{id}"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
-            f"<form method='post'>"
+            f"<form method='post' enctype='multipart/form-data'>"
             f"<input type='hidden' name='d' value='{html.escape(d)}' />"
             f"{form}"
             "<button class='btn btn-primary' type='submit'>Guardar</button> "
@@ -207,11 +239,25 @@ class Medico:
             return self._msg_error("Registro no encontrado")
 
         form = ""
-        form += self._input("IdMedico", "IdMedico", str(row.get("IdMedico", "")), True, "number")
+        # No mostrar IdMedico ni IdUsuario en detalle
         form += self._input("Nombre", "Nombre", str(row.get("Nombre", "")), True)
+        # Mostrar el nombre de la especialidad (campo alias Especialidad del JOIN)
         form += self._input("Especialidad", "Especialidad", str(row.get("Especialidad", "")), True)
-        form += self._input("IdUsuario", "IdUsuario", str(row.get("IdUsuario", "")), True, "number")
-        form += self._input("Foto", "Foto", str(row.get("Foto", "")), True)
+        # No mostrar IdUsuario en el detalle
+
+        # Mostrar la foto en lugar del nombre del archivo
+        foto = str(row.get("Foto", "") or "")
+        if foto:
+            form += (
+                "<div class='mb-3'>"
+                "<label class='form-label'>Foto</label>"
+                f"<div><img src='/static/img/usuarios/{html.escape(foto)}' "
+                "class='img-thumbnail' style='max-width: 150px;' "
+                "onerror=\"this.style.display='none'\" /></div>"
+                "</div>"
+            )
+        else:
+            form += self._input("Foto", "Foto", "Sin foto", True)
 
         return (
             f"<h2 class='mb-3'>Detalle Médico #{id}</h2>"
@@ -232,18 +278,36 @@ class Medico:
         especialidad = (form_data.get("Especialidad") or "").strip()
         id_usuario_s = (form_data.get("IdUsuario") or "").strip()
         id_usuario = int(id_usuario_s) if id_usuario_s else None
-        foto = (form_data.get("Foto") or "").strip()
+
+        # Manejo de la foto: si se sube una nueva, se guarda en static/img/usuarios.
+        # Si no, se mantiene la foto actual.
+        existing_foto = (form_data.get("FotoActual") or form_data.get("Foto") or "").strip()
+        foto_filename = existing_foto
+
+        try:
+            file = request.files.get("Foto")  # type: ignore[attr-defined]
+        except Exception:
+            file = None
+
+        if file and getattr(file, "filename", ""):
+            filename = secure_filename(file.filename)
+            if filename:
+                upload_dir = Path(current_app.static_folder) / "img" / "usuarios"  # type: ignore[attr-defined]
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                file_path = upload_dir / filename
+                file.save(str(file_path))
+                foto_filename = filename
 
         try:
             cur = self.cn.cursor()
             if op == "new":
-                cur.execute(self.sql_insert, (nombre, especialidad, id_usuario, foto))
+                cur.execute(self.sql_insert, (nombre, especialidad, id_usuario, foto_filename))
                 self.cn.commit()
                 cur.close()
                 return self._msg_success("Médico creado correctamente")
 
             if op == "act":
-                cur.execute(self.sql_update, (nombre, especialidad, id_usuario, foto, id_))
+                cur.execute(self.sql_update, (nombre, especialidad, id_usuario, foto_filename, id_))
                 self.cn.commit()
                 cur.close()
                 return self._msg_success("Médico actualizado correctamente")

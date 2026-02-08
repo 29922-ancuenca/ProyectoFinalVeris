@@ -76,12 +76,12 @@ CREATE TABLE `especialidades` (
 --
 
 INSERT INTO `especialidades` (`IdEsp`, `Descripcion`, `Dias`, `Franja_HI`, `Franja_HF`) VALUES
-(1, 'Cardiologia', 'MJV', '08:00:00', '12:00:00'),
-(2, 'Pediatria', 'LMXJV', '08:00:00', '18:00:00'),
-(3, 'Dermatologia', 'MJ', '12:00:00', '18:00:00'),
-(4, 'Ginecologia', 'LXV', '08:00:00', '18:00:00'),
-(5, 'Oftalmologia', 'LV', '08:00:00', '12:00:00'),
-(6, 'Proctologo', 'LM', '08:00:00', '12:00:00');
+(1, 'Oftalmologia', 'MJV', '08:00:00', '12:00:00'),
+(2, 'Neumologia', 'LMXJV', '08:00:00', '18:00:00'),
+(3, 'Traumatologia', 'MJ', '12:00:00', '18:00:00'),
+(4, 'Cardiologia', 'LXV', '08:00:00', '18:00:00'),
+(5, 'Pediatria', 'LV', '08:00:00', '12:00:00'),
+(6, 'Neurologia', 'XJV', '08:00:00', '12:00:00');
 
 -- --------------------------------------------------------
 
@@ -125,12 +125,12 @@ CREATE TABLE `medicos` (
 --
 
 INSERT INTO `medicos` (`IdMedico`, `Nombre`, `Especialidad`, `IdUsuario`, `Foto`) VALUES
-(1, 'Oscar Lopez', 5, 8, 'kia.jpg'),
-(2, 'Juan Garcia', 1, 2, 'ford.jpg'),
-(3, 'Ana Perez', 4, 5, 'chevrolet.jpg'),
-(4, 'Luis Quintana', 3, 9, 'toyota.jpg'),
-(5, 'Julieta Armijos', 2, 10, 'BMW_Azul.jpg'),
-(6, 'Dr. Manotas', 6, 11, 'kia.jpg');
+(1, 'Oscar Lopez', 5, 8, 'usu06.jpg'),
+(2, 'Juan Garcia', 1, 2, 'usu07.jpg'),
+(3, 'Ana Perez', 4, 5, 'usu08.jpg'),
+(4, 'Luis Quintana', 3, 9, 'usu09.jpg'),
+(5, 'Julieta Armijos', 2, 10, 'usu10.jpg'),
+(6, 'Dr. Manotas', 6, 11, 'usu11.jpg');
 
 -- --------------------------------------------------------
 
@@ -155,10 +155,10 @@ CREATE TABLE `pacientes` (
 --
 
 INSERT INTO `pacientes` (`IdPaciente`, `IdUsuario`, `Nombre`, `Cedula`, `Edad`, `Genero`, `Estatura (cm)`, `Peso (kg)`, `Foto`) VALUES
-(1, 3, 'Luis Torres', 1725001976, 20, 'Masculino', 198, 100, 'usu09.png'),
-(2, 6, 'Ana Gomez', 1798456712, 70, 'Femenino', 150, 90, 'usu13.png'),
-(3, 7, 'Oscar Uribe', 1725001984, 80, 'Masculino', 160, 105, 'usu01.png'),
-(4, 4, 'Alex Marquez', 1723547158, 70, 'Masculino', 195, 120, 'usu15.png');
+(1, 3, 'Luis Torres', 1725001976, 20, 'Masculino', 198, 100, 'usu09.jpg'),
+(2, 6, 'Ana Gomez', 1798456712, 70, 'Femenino', 150, 90, 'usu13.jpg'),
+(3, 7, 'Oscar Uribe', 1725001984, 80, 'Masculino', 160, 105, 'usu01.jpg'),
+(4, 4, 'Alex Marquez', 1723547158, 70, 'Masculino', 195, 120, 'usu15.jpg');
 
 -- --------------------------------------------------------
 

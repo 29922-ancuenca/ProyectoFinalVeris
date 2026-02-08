@@ -19,9 +19,11 @@
 <main class="container my-4 veris-login-container" aria-labelledby="title">
   <section id="loginForm" class="veris-login-section">
     <h2 id="title" class="veris-login-title mb-3 text-center">Iniciar sesión</h2>
-    <form action="{{ url_for('crud.login') }}" method="post" role="form" novalidate class="veris-login-form">
+    <form action="{{ url_for('crud.login', next=request.args.get('next')) }}" method="post" role="form" novalidate class="veris-login-form">
       <h4 class="veris-login-subtitle text-center mb-3">Utilice una cuenta local para iniciar sesión.</h4>
       <hr class="veris-login-divider" />
+
+      <input type="hidden" name="next" value="{{ next_page or request.args.get('next', '') }}" />
 
       <div class="mb-3 veris-login-group">
         <label for="UserName" class="veris-login-label">Usuario</label>
@@ -45,6 +47,10 @@
       <p class="text-center veris-login-register">
         <a href="{{ url_for('crud.register') }}" class="veris-login-link">Registrarse como usuario nuevo</a>
       </p>
+
+      <div class="mb-2 text-center">
+        <a href="{{ url_for('crud.index') }}" class="btn btn-secondary w-100">Regresar</a>
+      </div>
     </form>
   </section>
 </main>

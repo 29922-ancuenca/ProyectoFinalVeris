@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Módulo Administrador - Proyecto VERIS{% endblock %}
+
+{# Navbar específico para administrador: solo usuario + logout #}
+{% block nav %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex flex-column align-items-start" href="{{ url_for('crud.index') }}">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Veris" class="img-fluid mb-1" style="height: 35px; width: auto;">
+      <span class="slogan">Hacemos <strong>fácil cuidarte</strong></span>
+    </a>
+
+    <div class="d-flex flex-wrap ms-auto align-items-center mt-2 mt-lg-0">
+      {% if session.get('user_name') %}
+        <span class="navbar-text me-3 fw-semibold">{{ session['user_name'] }}</span>
+        <a href="{{ url_for('crud.logout') }}" class="btn btn-primary btn-sm">Logout</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<main class="container my-4">
+  <h2 class="mb-1 text-primary">Módulo Administrador</h2>
+  {% if session.get('user_name') %}
+  <p class="mb-4 fw-semibold">Bienvenido, {{ session['user_name'] }}</p>
+  {% else %}
+  <p class="mb-4 fw-semibold">Bienvenido al módulo Administrador</p>
+  {% endif %}
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'usuarios' %}active{% endif %}" id="tab-usuarios" data-bs-toggle="tab" data-bs-target="#panel-usuarios" type="button" role="tab">Usuarios</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'roles' %}active{% endif %}" id="tab-roles" data-bs-toggle="tab" data-bs-target="#panel-roles" type="button" role="tab">Roles</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'pacientes' %}active{% endif %}" id="tab-pacientes" data-bs-toggle="tab" data-bs-target="#panel-pacientes" type="button" role="tab">Pacientes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'medicos' %}active{% endif %}" id="tab-medicos" data-bs-toggle="tab" data-bs-target="#panel-medicos" type="button" role="tab">Médicos</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'especialidades' %}active{% endif %}" id="tab-especialidades" data-bs-toggle="tab" data-bs-target="#panel-especialidades" type="button" role="tab">Especialidades</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_module == 'medicamentos' %}active{% endif %}" id="tab-medicamentos" data-bs-toggle="tab" data-bs-target="#panel-medicamentos" type="button" role="tab">Medicamentos</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane fade {% if active_module == 'usuarios' %}show active{% endif %}" id="panel-usuarios" role="tabpanel" aria-labelledby="tab-usuarios">
+      {{ usuarios_html|safe }}
+    </div>
+
+    <div class="tab-pane fade {% if active_module == 'roles' %}show active{% endif %}" id="panel-roles" role="tabpanel" aria-labelledby="tab-roles">
+      {{ roles_html|safe }}
+    </div>
+
+    <div class="tab-pane fade {% if active_module == 'pacientes' %}show active{% endif %}" id="panel-pacientes" role="tabpanel" aria-labelledby="tab-pacientes">
+      {{ pacientes_html|safe }}
+    </div>
+
+    <div class="tab-pane fade {% if active_module == 'medicos' %}show active{% endif %}" id="panel-medicos" role="tabpanel" aria-labelledby="tab-medicos">
+      {{ medicos_html|safe }}
+    </div>
+
+    <div class="tab-pane fade {% if active_module == 'especialidades' %}show active{% endif %}" id="panel-especialidades" role="tabpanel" aria-labelledby="tab-especialidades">
+      {{ especialidades_html|safe }}
+    </div>
+
+    <div class="tab-pane fade {% if active_module == 'medicamentos' %}show active{% endif %}" id="panel-medicamentos" role="tabpanel" aria-labelledby="tab-medicamentos">
+      {{ medicamentos_html|safe }}
+    </div>
+  </div>
+</main>
+{% endblock %}

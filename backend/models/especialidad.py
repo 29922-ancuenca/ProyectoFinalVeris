@@ -43,21 +43,11 @@ class Especialidad:
     def navbar(self) -> str:
         items = (
             '<li class="nav-item"><a class="nav-link" href="/pacientes">'
-            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/medicos">'
-            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
-            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
-            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/consultas">'
-            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/recetas">'
-            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/roles">'
-            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/usuarios">'
-            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
@@ -74,14 +64,6 @@ class Especialidad:
             '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
             f"{items}"
             "</ul>"
-            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
-            '<a href="/login" class="btn btn-primary btn-sm me-3">'
-            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
-            "</a>"
-            '<a href="/register" class="btn btn-outline-primary btn-sm">'
-            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
-            "</a>"
-            "</div>"
             "</div></div></nav>"
         )
 
@@ -147,8 +129,6 @@ class Especialidad:
     def get_form(self, id: int = 0) -> str:
         is_new = id == 0
         op = "new" if is_new else "act"
-        disabled_pk = (not is_new)
-
         values = {"IdEsp": "", "Descripcion": "", "Dias": "", "Franja_HI": "", "Franja_HF": ""}
         if not is_new:
             cur = self.cn.cursor(dictionary=True)
@@ -160,9 +140,20 @@ class Especialidad:
             for k in values:
                 values[k] = "" if row.get(k) is None else str(row.get(k))
 
+        # Ajustar formato de hora de HH:MM:SS a HH:MM para los inputs type="time"
+        def _fmt_time(v: str) -> str:
+            v = (v or "").strip()
+            # Si viene como 08:00:00 desde MySQL, recortar a 08:00
+            if len(v) == 8 and v[2] == ":" and v[5] == ":":
+                return v[:5]
+            return v
+
+        values["Franja_HI"] = _fmt_time(values["Franja_HI"])
+        values["Franja_HF"] = _fmt_time(values["Franja_HF"])
+
         d = self._d_encode(op, id)
         form = ""
-        form += self._input("IdEsp", "IdEsp", values["IdEsp"], disabled_pk, "number")
+        # No mostrar IdEsp en el formulario (se maneja internamente con d)
         form += self._input("Descripcion", "Descripcion", values["Descripcion"], False)
         form += self._input("Dias", "Dias", values["Dias"], False)
         form += self._input("Franja_HI", "Franja_HI", values["Franja_HI"], False, "time")
@@ -187,12 +178,21 @@ class Especialidad:
         if not row:
             return self._msg_error("Registro no encontrado")
 
+        def _fmt_time(v: str) -> str:
+            v = (v or "").strip()
+            if len(v) == 8 and v[2] == ":" and v[5] == ":":
+                return v[:5]
+            return v
+
+        franja_hi = _fmt_time(str(row.get("Franja_HI", "")))
+        franja_hf = _fmt_time(str(row.get("Franja_HF", "")))
+
         form = ""
-        form += self._input("IdEsp", "IdEsp", str(row.get("IdEsp", "")), True, "number")
+        # No mostrar IdEsp en detalle
         form += self._input("Descripcion", "Descripcion", str(row.get("Descripcion", "")), True)
         form += self._input("Dias", "Dias", str(row.get("Dias", "")), True)
-        form += self._input("Franja_HI", "Franja_HI", str(row.get("Franja_HI", "")), True, "time")
-        form += self._input("Franja_HF", "Franja_HF", str(row.get("Franja_HF", "")), True, "time")
+        form += self._input("Franja_HI", "Franja_HI", franja_hi, True, "time")
+        form += self._input("Franja_HF", "Franja_HF", franja_hf, True, "time")
 
         return (
             f"<h2 class='mb-3'>Detalle Especialidad #{id}</h2>"

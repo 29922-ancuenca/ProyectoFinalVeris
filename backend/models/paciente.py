@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import base64
 import html
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+from flask import current_app, request
+from werkzeug.utils import secure_filename
 
 
 class Paciente:
@@ -66,21 +70,11 @@ class Paciente:
     def navbar(self) -> str:
         items = (
             '<li class="nav-item"><a class="nav-link" href="/pacientes">'
-            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/medicos">'
-            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
-            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
-            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/consultas">'
-            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/recetas">'
-            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/roles">'
-            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/usuarios">'
-            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
@@ -97,14 +91,6 @@ class Paciente:
             '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
             f"{items}"
             "</ul>"
-            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
-            '<a href="/login" class="btn btn-primary btn-sm me-3">'
-            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
-            "</a>"
-            '<a href="/register" class="btn btn-outline-primary btn-sm">'
-            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
-            "</a>"
-            "</div>"
             "</div></div></nav>"
         )
 
@@ -192,7 +178,6 @@ class Paciente:
     def get_form(self, id: int = 0) -> str:
         is_new = id == 0
         op = "new" if is_new else "act"
-        disabled_pk = (not is_new)
 
         values = {
             "IdPaciente": "",
@@ -218,20 +203,46 @@ class Paciente:
 
         d = self._d_encode(op, id)
         form = ""
-        form += self._input("IdPaciente", "IdPaciente", values["IdPaciente"], disabled_pk, "number")
-        form += self._input("IdUsuario", "IdUsuario", values["IdUsuario"], False, "number")
+        # No mostrar IdPaciente ni IdUsuario en el formulario (se manejan internamente)
+        # IdUsuario viaja como campo oculto para mantener la relación al editar.
+        if values["IdUsuario"]:
+            form += (
+                f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
+            )
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Cedula", "Cedula", values["Cedula"], False)
         form += self._input("Edad", "Edad", values["Edad"], False, "number")
         form += self._input("Genero", "Genero", values["Genero"], False)
         form += self._input("Estatura_cm", "Estatura (cm)", values["Estatura_cm"], False, "number")
         form += self._input("Peso_kg", "Peso (kg)", values["Peso_kg"], False, "number")
-        form += self._input("Foto", "Foto (archivo en static/img/usuarios)", values["Foto"], False)
+
+        # Campo para subir nueva foto (muestra input file en lugar del nombre)
+        if values["Foto"]:
+            form += (
+                "<div class='mb-3'>"
+                "<label class='form-label'>Foto actual</label>"
+                f"<div><img src='/static/img/usuarios/{html.escape(values['Foto'])}' "
+                "class='img-thumbnail' style='max-width: 100px;' "
+                "onerror=\"this.style.display='none'\" /></div>"
+                "</div>"
+            )
+
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Foto'>Nueva foto</label>"
+            "<input class='form-control' id='Foto' name='Foto' type='file' accept='image/*' />"
+            "</div>"
+        )
+
+        # Mantener el nombre de la foto actual si no se sube una nueva
+        form += (
+            f"<input type='hidden' name='FotoActual' value='{html.escape(values['Foto'])}' />"
+        )
 
         title = "Nuevo Paciente" if is_new else f"Actualizar Paciente #{id}"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
-            f"<form method='post'>"
+            f"<form method='post' enctype='multipart/form-data'>"
             f"<input type='hidden' name='d' value='{html.escape(d)}' />"
             f"{form}"
             "<button class='btn btn-primary' type='submit'>Guardar</button> "
@@ -250,15 +261,27 @@ class Paciente:
         values = {k: ("" if row.get(k) is None else str(row.get(k))) for k in row.keys()}
 
         form = ""
-        form += self._input("IdPaciente", "IdPaciente", str(values.get("IdPaciente", "")), True, "number")
-        form += self._input("IdUsuario", "IdUsuario", str(values.get("IdUsuario", "")), True, "number")
+        # No mostrar IdPaciente ni IdUsuario en detalle
         form += self._input("Nombre", "Nombre", str(values.get("Nombre", "")), True)
         form += self._input("Cedula", "Cedula", str(values.get("Cedula", "")), True)
         form += self._input("Edad", "Edad", str(values.get("Edad", "")), True, "number")
         form += self._input("Genero", "Genero", str(values.get("Genero", "")), True)
         form += self._input("Estatura_cm", "Estatura (cm)", str(values.get("Estatura_cm", "")), True, "number")
         form += self._input("Peso_kg", "Peso (kg)", str(values.get("Peso_kg", "")), True, "number")
-        form += self._input("Foto", "Foto", str(values.get("Foto", "")), True)
+
+        # Mostrar la foto en lugar del nombre del archivo
+        foto = str(values.get("Foto", "") or "")
+        if foto:
+            form += (
+                "<div class='mb-3'>"
+                "<label class='form-label'>Foto</label>"
+                f"<div><img src='/static/img/usuarios/{html.escape(foto)}' "
+                "class='img-thumbnail' style='max-width: 150px;' "
+                "onerror=\"this.style.display='none'\" /></div>"
+                "</div>"
+            )
+        else:
+            form += self._input("Foto", "Foto", "Sin foto", True)
 
         return (
             f"<h2 class='mb-3'>Detalle Paciente #{id}</h2>"
@@ -283,6 +306,25 @@ class Paciente:
             v = (form_data.get(name) or "").strip()
             return float(v) if v else None
 
+        # Manejo de la foto: si se sube una nueva, se guarda en static/img/usuarios.
+        # Si no, se mantiene la foto actual.
+        existing_foto = (form_data.get("FotoActual") or form_data.get("Foto") or "").strip()
+        foto_filename = existing_foto
+
+        try:
+            file = request.files.get("Foto")  # type: ignore[attr-defined]
+        except Exception:
+            file = None
+
+        if file and getattr(file, "filename", ""):
+            filename = secure_filename(file.filename)
+            if filename:
+                upload_dir = Path(current_app.static_folder) / "img" / "usuarios"  # type: ignore[attr-defined]
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                file_path = upload_dir / filename
+                file.save(str(file_path))
+                foto_filename = filename
+
         payload = (
             _i("IdUsuario"),
             (form_data.get("Nombre") or "").strip(),
@@ -291,7 +333,7 @@ class Paciente:
             (form_data.get("Genero") or "").strip(),
             _f("Estatura_cm"),
             _f("Peso_kg"),
-            (form_data.get("Foto") or "").strip(),
+            foto_filename,
         )
 
         try:

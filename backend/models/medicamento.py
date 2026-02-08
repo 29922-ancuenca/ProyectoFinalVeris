@@ -41,21 +41,11 @@ class Medicamento:
     def navbar(self) -> str:
         items = (
             '<li class="nav-item"><a class="nav-link" href="/pacientes">'
-            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/medicos">'
-            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
-            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
-            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/consultas">'
-            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/recetas">'
-            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/roles">'
-            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/usuarios">'
-            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
@@ -72,14 +62,6 @@ class Medicamento:
             '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
             f"{items}"
             "</ul>"
-            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
-            '<a href="/login" class="btn btn-primary btn-sm me-3">'
-            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
-            "</a>"
-            '<a href="/register" class="btn btn-outline-primary btn-sm">'
-            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
-            "</a>"
-            "</div>"
             "</div></div></nav>"
         )
 
@@ -143,8 +125,6 @@ class Medicamento:
     def get_form(self, id: int = 0) -> str:
         is_new = id == 0
         op = "new" if is_new else "act"
-        disabled_pk = (not is_new)
-
         values = {"IdMedicamento": "", "Nombre": "", "Tipo": ""}
         if not is_new:
             cur = self.cn.cursor(dictionary=True)
@@ -158,7 +138,7 @@ class Medicamento:
 
         d = self._d_encode(op, id)
         form = ""
-        form += self._input("IdMedicamento", "IdMedicamento", values["IdMedicamento"], disabled_pk, "number")
+        # No mostrar IdMedicamento en el formulario (se maneja internamente con d)
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Tipo", "Tipo", values["Tipo"], False)
 
@@ -182,7 +162,7 @@ class Medicamento:
             return self._msg_error("Registro no encontrado")
 
         form = ""
-        form += self._input("IdMedicamento", "IdMedicamento", str(row.get("IdMedicamento", "")), True, "number")
+        # No mostrar IdMedicamento en detalle
         form += self._input("Nombre", "Nombre", str(row.get("Nombre", "")), True)
         form += self._input("Tipo", "Tipo", str(row.get("Tipo", "")), True)
 

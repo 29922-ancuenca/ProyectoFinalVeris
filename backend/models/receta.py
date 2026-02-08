@@ -57,21 +57,11 @@ class Receta:
     def navbar(self) -> str:
         items = (
             '<li class="nav-item"><a class="nav-link" href="/pacientes">'
-            '<i class="bi bi-people-fill me-1"></i>Pacientes</a></li>'
+            '<i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/medicos">'
-            '<i class="bi bi-person-badge-fill me-1"></i>Médicos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/especialidades">'
-            '<i class="bi bi-heart-pulse me-1"></i>Especialidades</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/medicamentos">'
-            '<i class="bi bi-capsule me-1"></i>Medicamentos</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/consultas">'
-            '<i class="bi bi-clipboard2-pulse me-1"></i>Consultas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/recetas">'
-            '<i class="bi bi-receipt me-1"></i>Recetas</a></li>'
-            '<li class="nav-item"><a class="nav-link" href="/roles">'
-            '<i class="bi bi-shield-lock-fill me-1"></i>Roles</a></li>'
+            '<i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>'
             '<li class="nav-item"><a class="nav-link" href="/usuarios">'
-            '<i class="bi bi-person-lines-fill me-1"></i>Usuarios</a></li>'
+            '<i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>'
         )
         return (
             '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">'
@@ -88,14 +78,6 @@ class Receta:
             '<ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">'
             f"{items}"
             "</ul>"
-            '<div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">'
-            '<a href="/login" class="btn btn-primary btn-sm me-3">'
-            '<i class="bi bi-person-fill me-1"></i> Iniciar sesión'
-            "</a>"
-            '<a href="/register" class="btn btn-outline-primary btn-sm">'
-            '<i class="bi bi-person-plus-fill me-1"></i> Registrarse'
-            "</a>"
-            "</div>"
             "</div></div></nav>"
         )
 
