@@ -43,7 +43,7 @@
               {% if base_path and pk_name %}
                 <td class="veris-tabla-acciones">
                   <a href="{{ base_path }}/{{ fila[pk_name] }}/edit" class="btn btn-sm veris-tabla-btn editar">Editar</a>
-                  <form method="post" action="{{ base_path }}/{{ fila[pk_name] }}/delete" style="display:inline" onsubmit="return confirm('¿Eliminar este registro?');">
+                  <form method="post" action="{{ base_path }}/{{ fila[pk_name] }}/delete" style="display:inline" data-veris-confirm="¿Eliminar este registro?">
                     <button class="btn btn-sm veris-tabla-btn eliminar" type="submit">Eliminar</button>
                   </form>
                 </td>

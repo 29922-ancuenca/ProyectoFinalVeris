@@ -129,7 +129,7 @@
         const n = form.querySelector('#NombrePerfil, #Nombre');
         if (n && !isValidDoctorNombre(n.value)) {
           e.preventDefault();
-          alert('Nombre de médico inválido. Debe tener el formato: Dr/a. Nombre Apellido');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Nombre de médico inválido. Debe tener el formato: Dr/a. Nombre Apellido');
         }
       });
     });

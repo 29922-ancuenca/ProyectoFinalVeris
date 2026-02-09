@@ -136,7 +136,7 @@
       // Solo validar si están presentes los campos del paciente
       if (nombre && !isValidPacienteNombre(nombre.value)) {
         e.preventDefault();
-        alert('Nombre inválido. Debe ser solo letras y con formato: Nombre Apellido');
+        if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Nombre inválido. Debe ser solo letras y con formato: Nombre Apellido');
         return;
       }
 
@@ -148,14 +148,14 @@
           const asNum = Number(c);
           if (Number.isFinite(asNum) && asNum > 4294967295) {
             e.preventDefault();
-            alert('Cédula inválida o fuera de rango. Ingrese una cédula ecuatoriana válida.');
+            if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Cédula inválida o fuera de rango. Ingrese una cédula ecuatoriana válida.');
             return;
           }
         }
 
         if (!validarCedulaJS(c)) {
           e.preventDefault();
-          alert('Cédula inválida. Ingrese una cédula ecuatoriana válida.');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Cédula inválida. Ingrese una cédula ecuatoriana válida.');
           return;
         }
       }
@@ -164,7 +164,7 @@
         const n = asNumber(edad.value);
         if (n === null || n < 0 || n > 120) {
           e.preventDefault();
-          alert('Edad inválida. Debe estar entre 0 y 120.');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Edad inválida. Debe estar entre 0 y 120.');
           return;
         }
       }
@@ -173,7 +173,7 @@
         const n = asNumber(estatura.value);
         if (n === null || n < 30 || n > 250) {
           e.preventDefault();
-          alert('Estatura inválida. Debe estar entre 30 y 250 cm.');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Estatura inválida. Debe estar entre 30 y 250 cm.');
           return;
         }
       }
@@ -182,7 +182,7 @@
         const n = asNumber(peso.value);
         if (n === null || n < 0 || n > 300) {
           e.preventDefault();
-          alert('Peso inválido. Debe estar entre 0 y 300 kg.');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Peso inválido. Debe estar entre 0 y 300 kg.');
           return;
         }
       }
@@ -191,7 +191,7 @@
         const g = String(genero.value || '').trim();
         if (g !== 'Masculino' && g !== 'Femenino') {
           e.preventDefault();
-          alert('Género inválido. Seleccione Masculino o Femenino.');
+          if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert('Género inválido. Seleccione Masculino o Femenino.');
           return;
         }
       }

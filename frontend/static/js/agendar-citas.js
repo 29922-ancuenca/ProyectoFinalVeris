@@ -140,7 +140,7 @@ function confirmarCita() {
 
 function mostrarAlerta(mensaje, tipo) {
   // Mantenerlo simple para este proyecto
-  alert(mensaje);
+  if (window.VerisModal && window.VerisModal.alert) window.VerisModal.alert(mensaje);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
