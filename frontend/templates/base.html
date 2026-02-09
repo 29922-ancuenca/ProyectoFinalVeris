@@ -28,9 +28,13 @@
 
           <div class="collapse navbar-collapse justify-content-between" id="menuPrincipal">
             <ul class="navbar-nav flex-grow-1 justify-content-evenly text-center">
-              <li class="nav-item"><a class="nav-link" href="/pacientes"><i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>
-              <li class="nav-item"><a class="nav-link" href="/medicos"><i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>
-              <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>
+              {% if session.get('user_role') == 1 %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('crud.admin') }}"><i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>
+              {% else %}
+                <li class="nav-item"><a class="nav-link" href="/pacientes"><i class="bi bi-people-fill me-1"></i>Módulo Paciente</a></li>
+                <li class="nav-item"><a class="nav-link" href="/medicos"><i class="bi bi-person-badge-fill me-1"></i>Módulo Médico</a></li>
+                <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-shield-lock-fill me-1"></i>Módulo Administrador</a></li>
+              {% endif %}
             </ul>
 
             <div class="d-flex flex-wrap justify-content-center justify-content-lg-end mt-2 mt-lg-0">

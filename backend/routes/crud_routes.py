@@ -246,19 +246,30 @@ def login():
             flash("Usuario o contraseña incorrectos", "danger")
             return render_template("login.html", next_page=next_page)
 
-        # Validar que el rol del usuario coincida con el módulo al que intenta acceder
+        # Validar que el rol del usuario coincida con el módulo al que intenta acceder.
         requested_path = next_page or ""
-        if requested_path.startswith("/medicos") and user["Rol"] not in (1, 2):
+        if requested_path.startswith("/medicos") and user["Rol"] != 2:
             flash("Las credenciales ingresadas pertenecen a un usuario que no es Médico.", "danger")
+            return render_template("login.html", next_page=next_page)
+
+        if requested_path.startswith("/pacientes") and user["Rol"] != 3:
+            flash("Las credenciales ingresadas pertenecen a un usuario que no es Paciente.", "danger")
             return render_template("login.html", next_page=next_page)
 
         if requested_path.startswith("/usuarios") and user["Rol"] != 1:
             flash("Las credenciales ingresadas pertenecen a un usuario que no es Administrador.", "danger")
             return render_template("login.html", next_page=next_page)
 
-        if requested_path.startswith("/pacientes") and user["Rol"] != 3:
-            flash("Las credenciales ingresadas pertenecen a un usuario que no es Paciente.", "danger")
+        if requested_path.startswith("/roles") and user["Rol"] != 1:
+            flash("Las credenciales ingresadas pertenecen a un usuario que no es Administrador.", "danger")
+            return render_template("login.html", next_page=next_page)
 
+        if requested_path.startswith("/especialidades") and user["Rol"] != 1:
+            flash("Las credenciales ingresadas pertenecen a un usuario que no es Administrador.", "danger")
+            return render_template("login.html", next_page=next_page)
+
+        if requested_path.startswith("/medicamentos") and user["Rol"] != 1:
+            flash("Las credenciales ingresadas pertenecen a un usuario que no es Administrador.", "danger")
             return render_template("login.html", next_page=next_page)
 
         session["user_id"] = user["IdUsuario"]
@@ -271,10 +282,20 @@ def login():
             flash("Inicio de sesión exitoso", "success")
 
         if next_page:
-            # Si es administrador y venía al módulo Usuarios,
-            # lo enviamos al nuevo dashboard de administrador.
-            if role == 1 and next_page.startswith("/usuarios"):
-                return redirect(url_for("crud.admin"))
+            # Si es administrador, todo se gestiona desde /admin.
+            if role == 1:
+                if next_page.startswith("/usuarios"):
+                    return redirect(url_for("crud.admin", m="usuarios"))
+                if next_page.startswith("/roles"):
+                    return redirect(url_for("crud.admin", m="roles"))
+                if next_page.startswith("/pacientes"):
+                    return redirect(url_for("crud.admin", m="pacientes"))
+                if next_page.startswith("/medicos"):
+                    return redirect(url_for("crud.admin", m="medicos"))
+                if next_page.startswith("/especialidades"):
+                    return redirect(url_for("crud.admin", m="especialidades"))
+                if next_page.startswith("/medicamentos"):
+                    return redirect(url_for("crud.admin", m="medicamentos"))
             return redirect(next_page)
 
         # Redirección por rol si no se indicó módulo
@@ -439,7 +460,8 @@ def usuarios():
         flash("No tiene permiso para acceder al módulo Administrador", "danger")
         return redirect(url_for("crud.index"))
 
-    return _handle_model(Usuario)
+    # Todo el módulo Administrador se maneja en /admin
+    return redirect(url_for("crud.admin", m="usuarios"))
 
 
 @bp.route("/admin", methods=["GET", "POST"], strict_slashes=False)
@@ -555,7 +577,7 @@ def roles():
         flash("No tiene permiso para acceder al módulo Roles", "danger")
         return redirect(url_for("crud.index"))
 
-    return _handle_model(Rol)
+    return redirect(url_for("crud.admin", m="roles"))
 
 
 @bp.route("/pacientes", methods=["GET", "POST"], strict_slashes=False)
@@ -567,9 +589,10 @@ def pacientes():
     user_id = session.get("user_id")
     user_role = session.get("user_role")
 
-    # Administrador: CRUD completo de pacientes
+    # Administrador: se gestiona desde el dashboard /admin
     if user_role == 1:
-        return _handle_model(Paciente)
+        flash("No tiene permiso para acceder al módulo Paciente", "danger")
+        return redirect(url_for("crud.admin", m="pacientes"))
 
     # Paciente: dashboard de solo lectura vinculado a su usuario
     if user_role == 3:
@@ -953,9 +976,10 @@ def medicos():
     user_role = session.get("user_role")
     user_id = session.get("user_id")
 
-    # Administrador: mantiene el CRUD completo de médicos
+    # Administrador: se gestiona desde el dashboard /admin
     if user_role == 1:
-        return _handle_model(Medico)
+        flash("No tiene permiso para acceder al módulo Médico", "danger")
+        return redirect(url_for("crud.admin", m="medicos"))
 
     # Médico: ver su propio panel (similar a paciente)
     if user_role == 2:
@@ -1449,7 +1473,7 @@ def especialidades():
         flash("No tiene permiso para acceder al módulo Especialidades", "danger")
         return redirect(url_for("crud.index"))
 
-    return _handle_model(Especialidad)
+    return redirect(url_for("crud.admin", m="especialidades"))
 
 
 @bp.route("/medicamentos", methods=["GET", "POST"], strict_slashes=False)
@@ -1462,7 +1486,7 @@ def medicamentos():
         flash("No tiene permiso para acceder al módulo Medicamentos", "danger")
         return redirect(url_for("crud.index"))
 
-    return _handle_model(Medicamento)
+    return redirect(url_for("crud.admin", m="medicamentos"))
 
 
 @bp.route("/consultas", methods=["GET", "POST"], strict_slashes=False)
