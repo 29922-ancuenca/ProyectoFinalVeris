@@ -260,6 +260,145 @@ footer {
   }
 }
 
+/* =========================================================
+   AGENDAR CITA (calendario + horarios)
+   ========================================================= */
+
+.agendar-calendario-container {
+  overflow-x: auto;
+}
+
+.agendar-calendario-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.agendar-calendario-header th {
+  text-align: center;
+  padding: 10px 0;
+  background-color: #e8f0fe;
+  color: #0b2347;
+  font-weight: 700;
+  border-bottom: 1px solid #d6e2ff;
+}
+
+.agendar-calendario-table td {
+  padding: 6px;
+  vertical-align: top;
+}
+
+.agendar-calendario-dia {
+  min-height: 56px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: default;
+  user-select: none;
+}
+
+.agendar-calendario-dia.vacio {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.agendar-calendario-dia .numero-dia {
+  font-weight: 700;
+  color: #0b2347;
+}
+
+.agendar-calendario-dia.disponible {
+  background-color: #d4edda;
+  border-color: #28a745;
+  cursor: pointer;
+}
+
+.agendar-calendario-dia.disponible:hover {
+  filter: brightness(0.98);
+}
+
+.agendar-calendario-dia.seleccionado {
+  background-color: #ffc107;
+  border-color: #ff9800;
+  cursor: pointer;
+}
+
+.agendar-calendario-dia.pasado {
+  background-color: #f2f4f8;
+  color: #666;
+  opacity: 0.65;
+}
+
+.agendar-calendario-dia.no-disponible {
+  background-color: #e9ecef;
+  opacity: 0.85;
+}
+
+.badge-horarios {
+  font-size: 0.75rem;
+  background-color: rgba(11, 35, 71, 0.12);
+  color: #0b2347;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.agendar-horario-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 576px) {
+  .agendar-horario-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.agendar-horario-btn {
+  border: 1px solid #d6e2ff;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-weight: 600;
+  color: #0b2347;
+}
+
+.agendar-horario-btn:hover {
+  background-color: #e8f0fe;
+}
+
+.agendar-horario-btn.seleccionado {
+  background-color: #1a73e8;
+  color: #fff;
+  border-color: #1a73e8;
+}
+
+.agendar-legend-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+
+.agendar-legend-box.disponible {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+}
+
+.agendar-legend-box.seleccionado {
+  background-color: #ffc107;
+  border: 2px solid #ff9800;
+}
+
+.agendar-legend-box.no-disponible {
+  background-color: #e9ecef;
+  border: 2px solid #e9ecef;
+}
+
 /*Estilos registro*/
 /* =========================================================
    ESTILOS FORMULARIO DE REGISTRO (register.html)

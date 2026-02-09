@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Agendar Cita Médica - Proyecto VERIS{% endblock %}
+
+{# Navbar específico: ocultar módulos Paciente/Médico/Administrador #}
+{% block nav %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex flex-column align-items-start" href="{{ url_for('crud.index') }}">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Veris" class="img-fluid mb-1" style="height: 35px; width: auto;">
+      <span class="slogan">Hacemos <strong>fácil cuidarte</strong></span>
+    </a>
+
+    <div class="d-flex flex-wrap ms-auto align-items-center mt-2 mt-lg-0">
+      {% if session.get('user_name') %}
+        <span class="navbar-text me-3 fw-semibold">{{ session['user_name'] }}</span>
+        <a href="{{ url_for('crud.logout') }}" class="btn btn-primary btn-sm">Logout</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="my-4">
+  <h2 class="mb-4 text-center text-primary">
+    <i class="bi bi-calendar-plus"></i> Agendar Cita Médica
+  </h2>
+
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <form method="get" action="{{ url_for('crud.agendar_cita') }}" id="formAgendar">
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-3">
+              <i class="bi bi-1-circle-fill text-primary"></i> Selecciona Especialidad y Médico
+            </h5>
+
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-heart-pulse"></i> Especialidad</label>
+              <select class="form-control" id="idEspecialidad" name="idEspecialidad" onchange="this.form.submit();">
+                <option value="">Seleccione...</option>
+                {% for e in especialidades %}
+                  <option value="{{ e.IdEsp }}" {% if id_especialidad|string == e.IdEsp|string %}selected{% endif %}>{{ e.Descripcion }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-person-badge"></i> Médico</label>
+              <select class="form-control" id="idMedico" name="idMedico" onchange="this.form.submit();" {% if not id_especialidad %}disabled{% endif %}>
+                <option value="">Seleccione...</option>
+                {% for m in medicos %}
+                  <option value="{{ m.IdMedico }}" {% if id_medico|string == m.IdMedico|string %}selected{% endif %}>{{ m.Nombre }}</option>
+                {% endfor %}
+              </select>
+              {% if not id_especialidad %}
+                <small class="text-muted">Primero selecciona una especialidad.</small>
+              {% endif %}
+            </div>
+
+            {% if id_medico %}
+              <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i>
+                <strong>Siguiente paso:</strong> Selecciona una fecha disponible en el calendario →
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <input type="hidden" name="mes" id="mesActual" value="{{ mes }}">
+        <input type="hidden" name="anio" id="anioActual" value="{{ anio }}">
+        <input type="hidden" name="fecha" id="fechaSeleccionada" value="{{ fecha }}">
+      </form>
+
+      {% if horarios and horarios|length > 0 %}
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3"><i class="bi bi-clock"></i> Horarios Disponibles</h5>
+
+            <form method="post" action="{{ url_for('crud.agendar_cita_confirmar') }}" id="formConfirmar">
+              <input type="hidden" name="IdEspecialidad" value="{{ id_especialidad }}">
+              <input type="hidden" name="IdMedico" value="{{ id_medico }}">
+              <input type="hidden" name="FechaConsulta" value="{{ fecha }}">
+              <input type="hidden" name="HI" id="horarioSeleccionado" required>
+
+              <div class="agendar-horario-grid">
+                {% for h in horarios %}
+                  <button type="button" class="agendar-horario-btn" onclick="seleccionarHorario(this, '{{ h }}')">
+                    <i class="bi bi-clock"></i><br>{{ h }}
+                  </button>
+                {% endfor %}
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg w-100 mt-4" id="btnConfirmar" disabled>
+                <i class="bi bi-check-circle"></i> Confirmar Cita
+              </button>
+            </form>
+          </div>
+        </div>
+      {% elif fecha and id_medico %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          No hay horarios disponibles para esta fecha.
+        </div>
+      {% endif %}
+
+      <div class="mt-3">
+        <a class="btn btn-outline-primary" href="{{ url_for('crud.pacientes') }}">
+          <i class="bi bi-arrow-left"></i> Volver al módulo Paciente
+        </a>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      {% if calendario and id_medico %}
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+            {% if es_primer_mes %}
+              <button type="button" class="btn btn-link text-white p-0 disabled" disabled style="font-size: 1.5rem; text-decoration: none; opacity: 0.3;">&#8249;</button>
+            {% else %}
+              <button type="button" onclick="cambiarMes(-1)" class="btn btn-link text-white p-0" style="font-size: 1.5rem; text-decoration: none;">&#8249;</button>
+            {% endif %}
+
+            <span class="fw-bold"><i class="bi bi-calendar3"></i> {{ nombre_mes }}</span>
+
+            {% if es_ultimo_mes %}
+              <button type="button" class="btn btn-link text-white p-0 disabled" disabled style="font-size: 1.5rem; text-decoration: none; opacity: 0.3;">&#8250;</button>
+            {% else %}
+              <button type="button" onclick="cambiarMes(1)" class="btn btn-link text-white p-0" style="font-size: 1.5rem; text-decoration: none;">&#8250;</button>
+            {% endif %}
+          </div>
+
+          <div class="card-body p-0 agendar-calendario-container">
+            <table class="agendar-calendario-table">
+              <thead class="agendar-calendario-header">
+                <tr>
+                  <th>Lu</th><th>Ma</th><th>Mi</th><th>Ju</th><th>Vi</th><th>Sa</th><th>Do</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for semana in calendario %}
+                  <tr>
+                    {% for dia in semana %}
+                      {% if dia.empty %}
+                        <td><div class="agendar-calendario-dia vacio"></div></td>
+                      {% else %}
+                        {% set clase = 'agendar-calendario-dia ' %}
+                        {% if dia.is_selected %}
+                          {% set clase = clase + 'seleccionado' %}
+                        {% elif dia.is_past %}
+                          {% set clase = clase + 'pasado' %}
+                        {% elif dia.has_slots %}
+                          {% set clase = clase + 'disponible' %}
+                        {% else %}
+                          {% set clase = clase + 'no-disponible' %}
+                        {% endif %}
+
+                        <td>
+                          <div class="{{ clase }}" {% if dia.has_slots %}onclick="seleccionarFecha('{{ dia.iso }}')"{% endif %}>
+                            <div class="numero-dia">{{ dia.day }}</div>
+                            {% if dia.has_slots %}
+                              <span class="badge-horarios">{{ dia.slot_count }} <i class="bi bi-clock-fill"></i></span>
+                            {% endif %}
+                          </div>
+                        </td>
+                      {% endif %}
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="p-3 bg-light border-top">
+              <small class="fw-bold">Leyenda:</small>
+              <div class="d-flex flex-wrap gap-3 mt-2">
+                <div class="d-flex align-items-center">
+                  <div class="agendar-legend-box disponible"></div>
+                  <small>Disponible</small>
+                </div>
+                <div class="d-flex align-items-center">
+                  <div class="agendar-legend-box seleccionado"></div>
+                  <small>Seleccionado</small>
+                </div>
+                <div class="d-flex align-items-center">
+                  <div class="agendar-legend-box no-disponible"></div>
+                  <small>No disponible</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN -->
+<div class="modal fade" id="modalConfirmarCita" tabindex="-1" aria-labelledby="modalConfirmarCitaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalConfirmarCitaLabel"><i class="bi bi-calendar-check"></i> Confirmar Cita Médica</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-info-circle"></i> Por favor, revise los detalles de su cita antes de confirmar.
+        </div>
+
+        <div class="resumen-cita">
+          <h6 class="fw-bold mb-3">Resumen de la Cita:</h6>
+          <div class="row mb-2">
+            <div class="col-5 fw-bold"><i class="bi bi-heart-pulse text-danger"></i> Especialidad:</div>
+            <div class="col-7" id="modalEspecialidad">-</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-5 fw-bold"><i class="bi bi-person-badge text-primary"></i> Médico:</div>
+            <div class="col-7" id="modalMedico">-</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-5 fw-bold"><i class="bi bi-calendar3 text-success"></i> Fecha:</div>
+            <div class="col-7" id="modalFecha">-</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-5 fw-bold"><i class="bi bi-clock text-warning"></i> Horario:</div>
+            <div class="col-7" id="modalHorario">-</div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning mt-3 mb-0">
+          <small><i class="bi bi-exclamation-triangle"></i> <strong>Importante:</strong> Una vez confirmada, su cita quedará registrada.</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmarModal"><i class="bi bi-check-circle"></i> Confirmar Cita</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/agendar-citas.js') }}"></script>
+{% endblock %}

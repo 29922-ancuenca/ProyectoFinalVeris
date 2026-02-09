@@ -43,7 +43,7 @@
       <button class="nav-link" id="tab-recetas" data-bs-toggle="tab" data-bs-target="#mis-recetas" type="button" role="tab">Mis recetas</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-agendar" data-bs-toggle="tab" data-bs-target="#agendar-citas" type="button" role="tab">Agendar citas</button>
+      <a class="nav-link" id="tab-agendar" href="{{ url_for('crud.agendar_cita') }}">Agendar citas</a>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="tab-consultas-recibidas" data-bs-toggle="tab" data-bs-target="#consultas-recibidas" type="button" role="tab">Consultas recibidas</button>
@@ -143,36 +143,6 @@
       </div>
       {% else %}
       <p class="text-muted">No tienes recetas registradas.</p>
-      {% endif %}
-    </div>
-
-    <div class="tab-pane fade" id="agendar-citas" role="tabpanel" aria-labelledby="tab-agendar">
-      <p class="text-muted">Esta sección es solo informativa. Para este proyecto no se implementa el CRUD de agendamiento.</p>
-      {% if especialidades %}
-      <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>Especialidad</th>
-              <th>Días</th>
-              <th>Hora inicio</th>
-              <th>Hora fin</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for e in especialidades %}
-            <tr>
-              <td>{{ e.Descripcion }}</td>
-              <td>{{ e.Dias }}</td>
-              <td>{{ e.Franja_HI }}</td>
-              <td>{{ e.Franja_HF }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <p class="text-muted">No hay información de especialidades disponible.</p>
       {% endif %}
     </div>
 

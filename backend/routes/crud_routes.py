@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import calendar as pycalendar
+from datetime import date, datetime, timedelta
+
 from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash, session
 
 from database.connection import get_connection
@@ -15,6 +18,154 @@ from models.usuario import Usuario
 
 
 bp = Blueprint("crud", __name__)
+
+
+_MAX_AGENDAR_FECHA = date(2030, 12, 31)
+
+
+def _parse_int(value: str | None, default: int) -> int:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except Exception:
+        return default
+
+
+def _time_to_minutes(value) -> int:
+    """Convierte MySQL TIME (str o datetime.time) a minutos desde medianoche."""
+
+    if value is None:
+        return 0
+    if hasattr(value, "hour") and hasattr(value, "minute"):
+        return int(value.hour) * 60 + int(value.minute)
+    s = str(value)
+    # soporta HH:MM o HH:MM:SS
+    parts = s.split(":")
+    h = int(parts[0])
+    m = int(parts[1]) if len(parts) > 1 else 0
+    return h * 60 + m
+
+
+def _minutes_to_hhmm(minutes: int) -> str:
+    h = minutes // 60
+    m = minutes % 60
+    return f"{h:02d}:{m:02d}"
+
+
+def _dias_str_to_weekdays(dias: str) -> set[int]:
+    """Mapea Dias (L M X J V S D) a weekday() de Python (Lunes=0..Domingo=6)."""
+
+    mapping = {"L": 0, "M": 1, "X": 2, "J": 3, "V": 4, "S": 5, "D": 6}
+    return {mapping[c] for c in (dias or "") if c in mapping}
+
+
+def _month_name_es(month: int) -> str:
+    meses = [
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ]
+    try:
+        return meses[month - 1].capitalize()
+    except Exception:
+        return ""
+
+
+def _build_calendar(anio: int, mes: int, today: date, selected_iso: str | None, dias_con_horarios: dict[str, int]):
+    """Devuelve semanas con celdas listas para render en Jinja."""
+
+    cal = pycalendar.Calendar(firstweekday=0)  # Lunes
+    weeks = []
+    selected = selected_iso or ""
+
+    for week in cal.monthdatescalendar(anio, mes):
+        row = []
+        for d in week:
+            if d.month != mes:
+                row.append({"empty": True})
+                continue
+
+            iso = d.isoformat()
+            is_past = d < today
+            count = int(dias_con_horarios.get(iso, 0))
+            has_slots = (not is_past) and (count > 0)
+            row.append(
+                {
+                    "empty": False,
+                    "iso": iso,
+                    "day": d.day,
+                    "is_past": is_past,
+                    "has_slots": has_slots,
+                    "slot_count": count,
+                    "is_selected": iso == selected,
+                }
+            )
+        weeks.append(row)
+
+    return weeks
+
+
+def _get_paciente_id_for_user(cn, user_id: int) -> int | None:
+    cur = cn.cursor(dictionary=True)
+    cur.execute("SELECT IdPaciente FROM pacientes WHERE IdUsuario=%s", (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    if not row:
+        return None
+    return row.get("IdPaciente")
+
+
+def _get_available_slots_30m(cn, id_medico: int, fecha_iso: str, franja_hi, franja_hf) -> list[str]:
+    """Calcula horarios disponibles (inicio) en intervalos de 30 min."""
+
+    start_min = _time_to_minutes(franja_hi)
+    end_min = _time_to_minutes(franja_hf)
+    slot_len = 30
+
+    if end_min <= start_min:
+        return []
+
+    # Generar candidatos
+    candidates: list[tuple[int, int]] = []
+    m = start_min
+    while m + slot_len <= end_min:
+        candidates.append((m, m + slot_len))
+        m += slot_len
+
+    # Ocupados por consultas existentes
+    cur = cn.cursor(dictionary=True)
+    cur.execute(
+        "SELECT HI, HF FROM consultas WHERE IdMedico=%s AND FechaConsulta=%s",
+        (id_medico, fecha_iso),
+    )
+    busy_rows = cur.fetchall() or []
+    cur.close()
+
+    busy: list[tuple[int, int]] = []
+    for r in busy_rows:
+        hi = _time_to_minutes(r.get("HI"))
+        hf = _time_to_minutes(r.get("HF"))
+        if hf > hi:
+            busy.append((hi, hf))
+
+    def overlaps(a: tuple[int, int], b: tuple[int, int]) -> bool:
+        return a[0] < b[1] and a[1] > b[0]
+
+    available = []
+    for c in candidates:
+        if any(overlaps(c, b) for b in busy):
+            continue
+        available.append(_minutes_to_hhmm(c[0]))
+
+    return available
 
 
 def _render_crud_page(model, content_html: str):
@@ -355,6 +506,267 @@ def pacientes():
 
     flash("No tiene permiso para acceder al módulo Paciente", "danger")
     return redirect(url_for("crud.index"))
+
+
+@bp.get("/pacientes/agendar-cita")
+def agendar_cita():
+    if "user_id" not in session:
+        return redirect(url_for("crud.login", next=request.path))
+
+    if session.get("user_role") != 3:
+        flash("No tiene permiso para acceder al agendamiento de citas", "danger")
+        return redirect(url_for("crud.index"))
+
+    today = date.today()
+
+    # Parámetros de navegación
+    mes = _parse_int(request.args.get("mes"), today.month)
+    anio = _parse_int(request.args.get("anio"), today.year)
+
+    # Clamp a rango permitido
+    if (anio, mes) < (today.year, today.month):
+        anio, mes = today.year, today.month
+    if (anio, mes) > (_MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month):
+        anio, mes = _MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month
+
+    id_especialidad = (request.args.get("idEspecialidad") or "").strip()
+    id_medico = (request.args.get("idMedico") or "").strip()
+    fecha_sel = (request.args.get("fecha") or "").strip()
+
+    # Validar fecha seleccionada
+    if fecha_sel:
+        try:
+            fecha_obj = datetime.strptime(fecha_sel, "%Y-%m-%d").date()
+            if fecha_obj < today or fecha_obj > _MAX_AGENDAR_FECHA:
+                fecha_sel = ""
+        except Exception:
+            fecha_sel = ""
+
+    with get_connection(current_app) as cn:
+        cur = cn.cursor(dictionary=True)
+
+        # Especialidades
+        cur.execute("SELECT IdEsp, Descripcion, Dias, Franja_HI, Franja_HF FROM especialidades ORDER BY Descripcion")
+        especialidades = cur.fetchall() or []
+
+        # Médicos filtrados por especialidad
+        medicos: list[dict] = []
+        especialidad_row = None
+        if id_especialidad:
+            cur.execute(
+                "SELECT IdEsp, Descripcion, Dias, Franja_HI, Franja_HF FROM especialidades WHERE IdEsp=%s",
+                (id_especialidad,),
+            )
+            especialidad_row = cur.fetchone()
+
+            cur.execute(
+                "SELECT IdMedico, Nombre FROM medicos WHERE Especialidad=%s ORDER BY Nombre",
+                (id_especialidad,),
+            )
+            medicos = cur.fetchall() or []
+
+        # Validar médico dentro de la especialidad
+        medico_row = None
+        if id_medico and id_especialidad:
+            cur.execute(
+                "SELECT m.IdMedico, m.Nombre, m.Especialidad, e.Descripcion AS NombreEspecialidad, e.Dias, e.Franja_HI, e.Franja_HF "
+                "FROM medicos m LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+                "WHERE m.IdMedico=%s AND m.Especialidad=%s",
+                (id_medico, id_especialidad),
+            )
+            medico_row = cur.fetchone()
+            if not medico_row:
+                id_medico = ""
+                fecha_sel = ""
+
+        dias_con_horarios: dict[str, int] = {}
+        horarios: list[str] = []
+
+        if medico_row:
+            dias_permitidos = _dias_str_to_weekdays(str(medico_row.get("Dias") or ""))
+            franja_hi = medico_row.get("Franja_HI")
+            franja_hf = medico_row.get("Franja_HF")
+
+            # Para cada día del mes, contar slots
+            _, days_in_month = pycalendar.monthrange(anio, mes)
+            for day in range(1, days_in_month + 1):
+                d = date(anio, mes, day)
+                if d < today or d > _MAX_AGENDAR_FECHA:
+                    continue
+                if dias_permitidos and d.weekday() not in dias_permitidos:
+                    continue
+                iso = d.isoformat()
+                slots = _get_available_slots_30m(cn, int(medico_row["IdMedico"]), iso, franja_hi, franja_hf)
+
+                # Si es hoy, filtrar slots ya pasados
+                if d == today:
+                    now = datetime.now()
+                    now_min = now.hour * 60 + now.minute
+                    slots = [s for s in slots if _time_to_minutes(s) > now_min]
+
+                if slots:
+                    dias_con_horarios[iso] = len(slots)
+
+            # Horarios del día seleccionado
+            if fecha_sel:
+                try:
+                    dsel = datetime.strptime(fecha_sel, "%Y-%m-%d").date()
+                except Exception:
+                    dsel = None
+
+                if dsel and (not dias_permitidos or dsel.weekday() in dias_permitidos) and dsel >= today:
+                    horarios = _get_available_slots_30m(
+                        cn,
+                        int(medico_row["IdMedico"]),
+                        fecha_sel,
+                        franja_hi,
+                        franja_hf,
+                    )
+                    if dsel == today:
+                        now = datetime.now()
+                        now_min = now.hour * 60 + now.minute
+                        horarios = [s for s in horarios if _time_to_minutes(s) > now_min]
+                else:
+                    fecha_sel = ""
+
+        cur.close()
+
+    calendario = _build_calendar(anio, mes, today, fecha_sel or None, dias_con_horarios)
+    nombre_mes = f"{_month_name_es(mes)} {anio}"
+
+    es_primer_mes = (anio, mes) == (today.year, today.month)
+    es_ultimo_mes = (anio, mes) == (_MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month)
+
+    return render_template(
+        "agendar_cita.html",
+        especialidades=especialidades,
+        medicos=medicos,
+        id_especialidad=id_especialidad,
+        id_medico=id_medico,
+        mes=mes,
+        anio=anio,
+        fecha=fecha_sel,
+        calendario=calendario,
+        dias_con_horarios=dias_con_horarios,
+        horarios=horarios,
+        nombre_mes=nombre_mes,
+        es_primer_mes=es_primer_mes,
+        es_ultimo_mes=es_ultimo_mes,
+    )
+
+
+@bp.post("/pacientes/agendar-cita/confirmar")
+def agendar_cita_confirmar():
+    if "user_id" not in session:
+        return redirect(url_for("crud.login", next=request.path))
+
+    if session.get("user_role") != 3:
+        flash("No tiene permiso para agendar citas", "danger")
+        return redirect(url_for("crud.index"))
+
+    id_especialidad = (request.form.get("IdEspecialidad") or "").strip()
+    id_medico = (request.form.get("IdMedico") or "").strip()
+    fecha = (request.form.get("FechaConsulta") or "").strip()
+    hi = (request.form.get("HI") or "").strip()
+
+    if not (id_especialidad and id_medico and fecha and hi):
+        flash("Complete especialidad, médico, fecha y horario.", "warning")
+        return redirect(url_for("crud.agendar_cita"))
+
+    try:
+        fecha_obj = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except Exception:
+        flash("Fecha inválida.", "warning")
+        return redirect(url_for("crud.agendar_cita"))
+
+    if fecha_obj < date.today() or fecha_obj > _MAX_AGENDAR_FECHA:
+        flash("La fecha seleccionada no está permitida.", "warning")
+        return redirect(url_for("crud.agendar_cita"))
+
+    # HF = HI + 30 min
+    try:
+        hi_min = _time_to_minutes(hi)
+        hf_min = hi_min + 30
+        hf = _minutes_to_hhmm(hf_min) + ":00"
+        hi_db = hi + ":00" if len(hi) == 5 else hi
+    except Exception:
+        flash("Horario inválido.", "warning")
+        return redirect(url_for("crud.agendar_cita"))
+
+    user_id = int(session.get("user_id"))
+
+    with get_connection(current_app) as cn:
+        paciente_id = _get_paciente_id_for_user(cn, user_id)
+        if not paciente_id:
+            flash("No existe un paciente asociado a este usuario.", "danger")
+            return redirect(url_for("crud.pacientes"))
+
+        cur = cn.cursor(dictionary=True)
+        # Validar médico vs especialidad y obtener franja/días
+        cur.execute(
+            "SELECT m.IdMedico, m.Nombre, e.Dias, e.Franja_HI, e.Franja_HF "
+            "FROM medicos m LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+            "WHERE m.IdMedico=%s AND m.Especialidad=%s",
+            (id_medico, id_especialidad),
+        )
+        medico_row = cur.fetchone()
+        if not medico_row:
+            cur.close()
+            flash("El médico no corresponde a la especialidad seleccionada.", "warning")
+            return redirect(url_for("crud.agendar_cita", idEspecialidad=id_especialidad))
+
+        dias_permitidos = _dias_str_to_weekdays(str(medico_row.get("Dias") or ""))
+        if dias_permitidos and fecha_obj.weekday() not in dias_permitidos:
+            cur.close()
+            flash("La especialidad no atiende en el día seleccionado.", "warning")
+            return redirect(url_for("crud.agendar_cita", idEspecialidad=id_especialidad, idMedico=id_medico))
+
+        franja_hi = medico_row.get("Franja_HI")
+        franja_hf = medico_row.get("Franja_HF")
+        slots = _get_available_slots_30m(cn, int(medico_row["IdMedico"]), fecha, franja_hi, franja_hf)
+        if hi not in slots:
+            cur.close()
+            flash("El horario seleccionado ya no está disponible.", "warning")
+            return redirect(
+                url_for(
+                    "crud.agendar_cita",
+                    idEspecialidad=id_especialidad,
+                    idMedico=id_medico,
+                    fecha=fecha,
+                )
+            )
+
+        # Validar choque (doble validación)
+        cur.execute(
+            "SELECT 1 FROM consultas "
+            "WHERE IdMedico=%s AND FechaConsulta=%s "
+            "AND NOT (HF <= %s OR HI >= %s) LIMIT 1",
+            (id_medico, fecha, hi_db, hf),
+        )
+        clash = cur.fetchone()
+        if clash:
+            cur.close()
+            flash("Ese horario acaba de ocuparse. Seleccione otro.", "warning")
+            return redirect(
+                url_for(
+                    "crud.agendar_cita",
+                    idEspecialidad=id_especialidad,
+                    idMedico=id_medico,
+                    fecha=fecha,
+                )
+            )
+
+        # Insertar consulta con Diagnostico pendiente
+        cur.execute(
+            "INSERT INTO consultas(IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico) "
+            "VALUES(%s,%s,%s,%s,%s,%s)",
+            (id_medico, paciente_id, fecha, hi_db, hf, "Pendiente"),
+        )
+        cn.commit()
+        cur.close()
+
+    flash("Cita médica agendada correctamente.", "success")
+    return redirect(url_for("crud.pacientes"))
 
 
 @bp.route("/medicos", methods=["GET", "POST"], strict_slashes=False)
