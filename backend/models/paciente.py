@@ -124,6 +124,57 @@ class Paciente:
         html_out += "</select></div>"
         return html_out
 
+    def _select_simple(self, name: str, label: str, options: list[str], selected: str, disabled: bool) -> str:
+        dis = " disabled" if disabled else ""
+        html_out = '<div class="mb-3">'
+        html_out += f'<label class="form-label" for="{html.escape(name)}">{html.escape(label)}</label>'
+        html_out += f'<select class="form-select" id="{html.escape(name)}" name="{html.escape(name)}"{dis}>'
+        html_out += "<option value=''>Seleccione...</option>"
+        for opt in options:
+            sel = " selected" if (opt or "") == (selected or "") else ""
+            html_out += f"<option value='{html.escape(opt)}'{sel}>{html.escape(opt)}</option>"
+        html_out += "</select></div>"
+        return html_out
+
+    def _validar_cedula_ec(self, cedula: str) -> bool:
+        c = (cedula or "").strip()
+        if len(c) != 10 or not c.isdigit():
+            return False
+
+        # Columna `Cedula` es INT UNSIGNED: evitar valores fuera de rango.
+        try:
+            if int(c) > 4294967295:
+                return False
+        except Exception:
+            return False
+
+        total = 0
+        for i in range(9):
+            digit = int(c[i])
+            if i % 2 == 0:
+                mul = digit * 2
+                total += (mul - 9) if mul > 9 else mul
+            else:
+                total += digit
+
+        last = int(c[9])
+        mod = total % 10
+        return (mod == 0 and last == 0) or ((10 - mod) == last)
+
+    def _validar_nombre_paciente(self, nombre: str) -> bool:
+        # Solo letras (incluye tildes/ñ) y un espacio: Nombre Apellido
+        n = " ".join((nombre or "").strip().split())
+        parts = [p for p in n.split(" ") if p]
+        if len(parts) != 2:
+            return False
+        import re
+
+        rx = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$")
+        if not all(rx.match(p) for p in parts):
+            return False
+        # Primera letra de cada palabra en mayúscula
+        return all(p[0].isupper() for p in parts)
+
     def _get_usuarios_disponibles_paciente(self, include_id: int | None = None) -> list[dict[str, Any]]:
         """Usuarios con rol Paciente (3) que no estén usados por paciente ni médico."""
 
@@ -263,12 +314,51 @@ class Paciente:
             if values["IdUsuario"]:
                 form += f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
 
-        form += self._input("Nombre", "Nombre", values["Nombre"], False)
-        form += self._input("Cedula", "Cedula", values["Cedula"], False)
-        form += self._input("Edad", "Edad", values["Edad"], False, "number")
-        form += self._input("Genero", "Genero", values["Genero"], False)
-        form += self._input("Estatura_cm", "Estatura (cm)", values["Estatura_cm"], False, "number")
-        form += self._input("Peso_kg", "Peso (kg)", values["Peso_kg"], False, "number")
+        # Restricción edición: solo Edad/Estatura/Peso/Foto editables
+        nombre_ro = " readonly" if not is_new else ""
+        cedula_ro = " readonly" if not is_new else ""
+
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Nombre'>Nombre</label>"
+            f"<input class='form-control' id='Nombre' name='Nombre' type='text' value='{html.escape(values['Nombre'])}'{nombre_ro} />"
+            "</div>"
+        )
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Cedula'>Cedula</label>"
+            f"<input class='form-control' id='Cedula' name='Cedula' type='text' maxlength='10' inputmode='numeric' value='{html.escape(values['Cedula'])}'{cedula_ro} />"
+            "</div>"
+        )
+
+        # Edad
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Edad'>Edad</label>"
+            f"<input class='form-control' id='Edad' name='Edad' type='number' min='0' max='120' step='1' value='{html.escape(values['Edad'])}' />"
+            "</div>"
+        )
+
+        # Género (select)
+        if is_new:
+            form += self._select_simple("Genero", "Género", ["Masculino", "Femenino"], values["Genero"], False)
+        else:
+            form += self._select_simple("Genero", "Género", ["Masculino", "Femenino"], values["Genero"], True)
+            form += f"<input type='hidden' name='Genero' value='{html.escape(values['Genero'])}' />"
+
+        # Estatura / Peso
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Estatura_cm'>Estatura (cm)</label>"
+            f"<input class='form-control' id='Estatura_cm' name='Estatura_cm' type='number' min='30' max='250' step='0.01' value='{html.escape(values['Estatura_cm'])}' />"
+            "</div>"
+        )
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Peso_kg'>Peso (kg)</label>"
+            f"<input class='form-control' id='Peso_kg' name='Peso_kg' type='number' min='0' max='300' step='0.01' value='{html.escape(values['Peso_kg'])}' />"
+            "</div>"
+        )
 
         # Campo para subir nueva foto (muestra input file en lugar del nombre)
         if values["Foto"]:
@@ -302,6 +392,7 @@ class Paciente:
             "<button class='btn btn-primary' type='submit'>Guardar</button> "
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
             "</form>"
+            "<script src='/static/js/paciente-validaciones.js'></script>"
         )
 
     def get_detail(self, id: int) -> str:
@@ -406,14 +497,49 @@ class Paciente:
                 file.save(str(file_path))
                 foto_filename = filename
 
+        nombre = (form_data.get("Nombre") or "").strip()
+        cedula = (form_data.get("Cedula") or "").strip()
+        edad = _i("Edad")
+        genero = (form_data.get("Genero") or "").strip()
+        estatura = _f("Estatura_cm")
+        peso = _f("Peso_kg")
+
+        # Validaciones
+        if op == "new":
+            if not self._validar_nombre_paciente(nombre):
+                return self._msg_error("Nombre inválido. Use el formato: Nombre Apellido (solo letras, iniciales en mayúscula)")
+            if not self._validar_cedula_ec(cedula):
+                return self._msg_error("Cédula inválida o fuera de rango. Ingrese una cédula ecuatoriana válida")
+            if genero not in ("Masculino", "Femenino"):
+                return self._msg_error("Género inválido. Seleccione Masculino o Femenino")
+        else:
+            # En edición, no se permiten cambios en nombre/cedula/genero/idUsuario.
+            curx = self.cn.cursor(dictionary=True)
+            curx.execute(self.sql_detail, (id_,))
+            row = curx.fetchone()
+            curx.close()
+            if not row:
+                return self._msg_error("Registro no encontrado")
+            id_usuario = int(row.get("IdUsuario") or id_usuario)
+            nombre = str(row.get("Nombre") or "")
+            cedula = str(row.get("Cedula") or "")
+            genero = str(row.get("Genero") or "")
+
+        if edad is None or edad < 0 or edad > 120:
+            return self._msg_error("Edad inválida. Debe estar entre 0 y 120")
+        if estatura is not None and (estatura < 30 or estatura > 250):
+            return self._msg_error("Estatura inválida. Debe estar entre 30 y 250 cm")
+        if peso is not None and (peso < 0 or peso > 300):
+            return self._msg_error("Peso inválido. Debe estar entre 0 y 300 kg")
+
         payload = (
             id_usuario,
-            (form_data.get("Nombre") or "").strip(),
-            (form_data.get("Cedula") or "").strip(),
-            _i("Edad"),
-            (form_data.get("Genero") or "").strip(),
-            _f("Estatura_cm"),
-            _f("Peso_kg"),
+            nombre,
+            cedula,
+            edad,
+            genero,
+            estatura,
+            peso,
             foto_filename,
         )
 

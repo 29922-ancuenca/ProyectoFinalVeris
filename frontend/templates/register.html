@@ -71,35 +71,39 @@
         <div class="row mb-3 align-items-center veris-register-group">
           <label for="Cedula" class="col-md-3 col-form-label veris-register-label">Cédula</label>
           <div class="col-md-9 veris-register-input-col">
-            <input type="text" id="Cedula" name="Cedula" class="form-control veris-register-input" />
+            <input type="text" id="Cedula" name="Cedula" class="form-control veris-register-input" maxlength="10" inputmode="numeric" />
           </div>
         </div>
 
         <div class="row mb-3 align-items-center veris-register-group">
           <label for="Edad" class="col-md-3 col-form-label veris-register-label">Edad</label>
           <div class="col-md-9 veris-register-input-col">
-            <input type="number" id="Edad" name="Edad" class="form-control veris-register-input" min="0" />
+            <input type="number" id="Edad" name="Edad" class="form-control veris-register-input" min="0" max="120" step="1" />
           </div>
         </div>
 
         <div class="row mb-3 align-items-center veris-register-group">
           <label for="Genero" class="col-md-3 col-form-label veris-register-label">Género</label>
           <div class="col-md-9 veris-register-input-col">
-            <input type="text" id="Genero" name="Genero" class="form-control veris-register-input" />
+            <select id="Genero" name="Genero" class="form-select veris-register-input">
+              <option value="">Seleccione...</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
           </div>
         </div>
 
         <div class="row mb-3 align-items-center veris-register-group">
           <label for="Estatura_cm" class="col-md-3 col-form-label veris-register-label">Estatura (cm)</label>
           <div class="col-md-9 veris-register-input-col">
-            <input type="number" id="Estatura_cm" name="Estatura_cm" class="form-control veris-register-input" step="0.01" min="0" />
+            <input type="number" id="Estatura_cm" name="Estatura_cm" class="form-control veris-register-input" step="0.01" min="30" max="250" />
           </div>
         </div>
 
         <div class="row mb-3 align-items-center veris-register-group">
           <label for="Peso_kg" class="col-md-3 col-form-label veris-register-label">Peso (kg)</label>
           <div class="col-md-9 veris-register-input-col">
-            <input type="number" id="Peso_kg" name="Peso_kg" class="form-control veris-register-input" step="0.01" min="0" />
+            <input type="number" id="Peso_kg" name="Peso_kg" class="form-control veris-register-input" step="0.01" min="0" max="300" />
           </div>
         </div>
       </div>
@@ -190,6 +194,9 @@
     }
   })();
 </script>
+
+<script src="{{ url_for('static', filename='js/paciente-validaciones.js') }}"></script>
+<script src="{{ url_for('static', filename='js/medico-validaciones.js') }}"></script>
 {% endblock %}
 
 {% block footer %}

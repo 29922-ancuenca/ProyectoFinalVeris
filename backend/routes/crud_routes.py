@@ -321,6 +321,58 @@ def logout():
 
 @bp.route("/register", methods=["GET", "POST"], strict_slashes=False)
 def register():
+    def validar_cedula_ec(cedula: str) -> bool:
+        c = (cedula or "").strip()
+        if len(c) != 10 or not c.isdigit():
+            return False
+
+        # La columna `Cedula` está definida como INT UNSIGNED.
+        # Evitar intentar insertar valores fuera de rango (provoca error 1264).
+        try:
+            if int(c) > 4294967295:
+                return False
+        except Exception:
+            return False
+
+        total = 0
+        for i in range(9):
+            digit = int(c[i])
+            if i % 2 == 0:
+                mul = digit * 2
+                total += (mul - 9) if mul > 9 else mul
+            else:
+                total += digit
+        last = int(c[9])
+        mod = total % 10
+        return (mod == 0 and last == 0) or ((10 - mod) == last)
+
+    def validar_nombre_paciente(nombre: str) -> bool:
+        n = " ".join((nombre or "").strip().split())
+        parts = [p for p in n.split(" ") if p]
+        if len(parts) != 2:
+            return False
+        import re
+
+        rx = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$")
+        if not all(rx.match(p) for p in parts):
+            return False
+        return all(p[0].isupper() for p in parts)
+
+    def validar_nombre_medico(nombre: str) -> bool:
+        n = (nombre or "").strip()
+        if not n.startswith("Dr/a. "):
+            return False
+        body = n[len("Dr/a. ") :].strip()
+        parts = [p for p in body.split(" ") if p]
+        if len(parts) != 2:
+            return False
+        import re
+
+        rx = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$")
+        if not all(rx.match(p) for p in parts):
+            return False
+        return all(p[0].isupper() for p in parts)
+
     def load_form_data():
         with get_connection(current_app) as cn:
             cur = cn.cursor(dictionary=True)
@@ -413,6 +465,42 @@ def register():
                 except Exception:
                     peso = None
 
+                if not validar_nombre_paciente(nombre_perfil):
+                    cn.rollback()
+                    cur.close()
+                    flash("Nombre inválido. Use el formato: Nombre Apellido (solo letras, iniciales en mayúscula)", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                if not validar_cedula_ec(cedula):
+                    cn.rollback()
+                    cur.close()
+                    flash("Cédula inválida o fuera de rango. Ingrese una cédula ecuatoriana válida", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                if edad is None or edad < 0 or edad > 120:
+                    cn.rollback()
+                    cur.close()
+                    flash("Edad inválida. Debe estar entre 0 y 120", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                if genero not in ("Masculino", "Femenino"):
+                    cn.rollback()
+                    cur.close()
+                    flash("Género inválido. Seleccione Masculino o Femenino", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                if estatura is not None and (estatura < 30 or estatura > 250):
+                    cn.rollback()
+                    cur.close()
+                    flash("Estatura inválida. Debe estar entre 30 y 250 cm", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                if peso is not None and (peso < 0 or peso > 300):
+                    cn.rollback()
+                    cur.close()
+                    flash("Peso inválido. Debe estar entre 0 y 300 kg", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
                 if not cedula or edad is None or not genero:
                     cn.rollback()
                     cur.close()
@@ -430,6 +518,12 @@ def register():
                 return redirect(url_for("crud.login"))
 
             # rol == 2 (Médico)
+            if not validar_nombre_medico(nombre_perfil):
+                cn.rollback()
+                cur.close()
+                flash("Nombre inválido. Debe tener el formato: Dr/a. Nombre Apellido", "danger")
+                return render_template("register.html", roles=roles, especialidades=especialidades)
+
             especialidad = (request.form.get("Especialidad") or "").strip()
             if not especialidad:
                 cn.rollback()

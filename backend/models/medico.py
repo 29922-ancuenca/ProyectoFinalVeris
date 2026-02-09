@@ -113,6 +113,21 @@ class Medico:
         html_out += "</select></div>"
         return html_out
 
+    def _validar_nombre_medico(self, nombre: str) -> bool:
+        n = (nombre or "").strip()
+        if not n.startswith("Dr/a. "):
+            return False
+        body = n[len("Dr/a. ") :].strip()
+        parts = [p for p in body.split(" ") if p]
+        if len(parts) != 2:
+            return False
+        import re
+
+        rx = re.compile(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$")
+        if not all(rx.match(p) for p in parts):
+            return False
+        return all(p[0].isupper() for p in parts)
+
     def _get_usuarios_disponibles_medico(self, include_id: int | None = None) -> list[dict[str, Any]]:
         """Usuarios con rol Médico (2) que no estén usados por paciente ni médico."""
 
@@ -236,7 +251,14 @@ class Medico:
             if values["IdUsuario"]:
                 form += f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
 
-        form += self._input("Nombre", "Nombre", values["Nombre"], False)
+        # Restricción edición: solo Especialidad/FOTO editables
+        nombre_ro = " readonly" if not is_new else ""
+        form += (
+            "<div class='mb-3'>"
+            "<label class='form-label' for='Nombre'>Nombre</label>"
+            f"<input class='form-control' id='Nombre' name='Nombre' type='text' value='{html.escape(values['Nombre'])}'{nombre_ro} />"
+            "</div>"
+        )
         # Selector de especialidad por nombre (value = id)
         form += "<div class='mb-3'>"
         form += "<label class='form-label' for='Especialidad'>Especialidad</label>"
@@ -283,6 +305,7 @@ class Medico:
             "<button class='btn btn-primary' type='submit'>Guardar</button> "
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
             "</form>"
+            "<script src='/static/js/medico-validaciones.js'></script>"
         )
 
     def get_detail(self, id: int) -> str:
@@ -340,6 +363,10 @@ class Medico:
         if not id_usuario:
             return self._msg_error("Debe seleccionar un usuario (rol Médico)")
 
+        if op == "new":
+            if not self._validar_nombre_medico(nombre):
+                return self._msg_error("Nombre inválido. Debe tener el formato: Dr/a. Nombre Apellido")
+
         # Validar que el usuario sea rol Médico y no esté usado (en creación)
         curv = self.cn.cursor(dictionary=True)
         curv.execute(
@@ -361,6 +388,20 @@ class Medico:
                 return self._msg_error("El usuario seleccionado ya está asignado a un paciente")
 
         curv.close()
+
+        # En edición, solo se puede cambiar Especialidad y Foto. El nombre/usuario quedan fijos.
+        if op == "act":
+            curx = self.cn.cursor(dictionary=True)
+            curx.execute(self.sql_detail, (id_,))
+            row = curx.fetchone()
+            curx.close()
+            if not row:
+                return self._msg_error("Registro no encontrado")
+            nombre = str(row.get("Nombre") or "")
+            try:
+                id_usuario = int(row.get("IdUsuario") or id_usuario)
+            except Exception:
+                pass
 
         # Manejo de la foto: si se sube una nueva, se guarda en static/img/usuarios.
         # Si no, se mantiene la foto actual.

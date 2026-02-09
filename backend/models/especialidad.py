@@ -193,6 +193,22 @@ class Especialidad:
 
         return ""
 
+    def _hhmm_to_minutes(self, hhmm: str) -> int | None:
+        s = (hhmm or "").strip()
+        if not s:
+            return None
+        parts = s.split(":")
+        if len(parts) < 2:
+            return None
+        try:
+            h = int(parts[0])
+            m = int(parts[1])
+        except Exception:
+            return None
+        if h < 0 or h > 23 or m < 0 or m > 59:
+            return None
+        return h * 60 + m
+
     def get_list(self) -> str:
         cur = self.cn.cursor(dictionary=True)
         cur.execute(self.sql_list)
@@ -327,6 +343,19 @@ class Especialidad:
 
         if not dias:
             return self._msg_error("Debe seleccionar al menos un día de atención")
+
+        hi_min = self._hhmm_to_minutes(franja_hi)
+        hf_min = self._hhmm_to_minutes(franja_hf)
+        if hi_min is None or hf_min is None:
+            return self._msg_error("Debe ingresar Franja_HI y Franja_HF en formato HH:MM")
+
+        if hi_min >= hf_min:
+            return self._msg_error("La Franja_HI debe ser menor que la Franja_HF")
+
+        min_allowed = 8 * 60
+        max_allowed = 18 * 60
+        if hi_min < min_allowed or hf_min > max_allowed:
+            return self._msg_error("El horario debe estar dentro de 08:00 a 18:00")
 
         try:
             cur = self.cn.cursor()
