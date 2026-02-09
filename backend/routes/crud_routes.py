@@ -433,7 +433,7 @@ def register():
         with get_connection(current_app) as cn:
             cur = cn.cursor(dictionary=True)
             # Usuario único por Nombre
-            cur.execute("SELECT 1 FROM usuarios WHERE Nombre=%s LIMIT 1", (username,))
+            cur.execute("SELECT 1 FROM usuarios WHERE LOWER(Nombre)=LOWER(%s) LIMIT 1", (username,))
             if cur.fetchone():
                 cur.close()
                 flash("Ese usuario ya existe", "danger")

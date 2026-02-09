@@ -242,8 +242,30 @@ class Usuario:
         password = (form_data.get("Password") or "").strip()
         rol = (form_data.get("Rol") or "").strip()
 
+        if not nombre:
+            return self._msg_error("El nombre de usuario es obligatorio")
+        if not password:
+            return self._msg_error("La contraseña es obligatoria")
+
         if rol not in ("2", "3"):
             return self._msg_error("Rol inválido: seleccione Médico o Paciente")
+
+        # Validar usuario único (case-insensitive) antes de insertar/actualizar
+        curv = self.cn.cursor(dictionary=True)
+        if op == "new":
+            curv.execute(
+                "SELECT 1 FROM usuarios WHERE LOWER(Nombre)=LOWER(%s) LIMIT 1",
+                (nombre,),
+            )
+        else:
+            curv.execute(
+                "SELECT 1 FROM usuarios WHERE LOWER(Nombre)=LOWER(%s) AND IdUsuario<>%s LIMIT 1",
+                (nombre, id_),
+            )
+        exists = curv.fetchone()
+        curv.close()
+        if exists:
+            return self._msg_error("Ese nombre de usuario ya está registrado")
 
         try:
             cur = self.cn.cursor()
