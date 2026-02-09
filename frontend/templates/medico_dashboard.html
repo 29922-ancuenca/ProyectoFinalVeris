@@ -88,6 +88,7 @@
               <th>Hora inicio</th>
               <th>Hora fin</th>
               <th>Diagnóstico</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -98,6 +99,13 @@
               <td>{{ c.HI }}</td>
               <td>{{ c.HF }}</td>
               <td>{{ c.Diagnostico }}</td>
+              <td>
+                {% if not c.Atendida %}
+                  <a class="btn btn-sm btn-primary" href="{{ url_for('crud.atender_consulta', id_consulta=c.IdConsulta) }}">Atender</a>
+                {% else %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ url_for('crud.siguiente_cita', id_consulta=c.IdConsulta) }}">Siguiente cita</a>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -140,8 +148,8 @@
     </div>
 
     <div class="tab-pane fade" id="consultas-realizadas" role="tabpanel" aria-labelledby="tab-consultas-realizadas">
-      {% if consultas %}
-      <p class="text-muted">Listado de todas las consultas que has realizado.</p>
+      {% if consultas_realizadas %}
+      <p class="text-muted">Listado de consultas realizadas con receta asignada.</p>
       <div class="table-responsive">
         <table class="table table-bordered table-striped">
           <thead>
@@ -154,7 +162,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for c in consultas %}
+            {% for c in consultas_realizadas %}
             <tr>
               <td>{{ c.NombrePaciente }}</td>
               <td>{{ c.FechaConsulta }}</td>

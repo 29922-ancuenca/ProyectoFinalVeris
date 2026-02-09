@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Atender consulta - Proyecto VERIS{% endblock %}
+
+{% block content %}
+<main class="container my-4">
+  <h2 class="mb-3 text-primary">Atender consulta</h2>
+
+  {% if consulta %}
+  <div class="mb-3">
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <tbody>
+          <tr><th>Paciente</th><td>{{ consulta.NombrePaciente }}</td></tr>
+          <tr><th>Fecha</th><td>{{ consulta.FechaConsulta }}</td></tr>
+          <tr><th>Hora inicio</th><td>{{ consulta.HI }}</td></tr>
+          <tr><th>Hora fin</th><td>{{ consulta.HF }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <form method="post" class="card card-body">
+    <div class="mb-3">
+      <label for="Diagnostico" class="form-label">Diagnóstico</label>
+      <textarea class="form-control" id="Diagnostico" name="Diagnostico" rows="4" required>{{ consulta.Diagnostico }}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="IdMedicamento" class="form-label">Medicamento</label>
+      <select class="form-select" id="IdMedicamento" name="IdMedicamento" required>
+        <option value="">Seleccione…</option>
+        {% for m in medicamentos %}
+          <option value="{{ m.IdMedicamento }}">{{ m.Nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="Cantidad" class="form-label">Cantidad</label>
+      <input class="form-control" id="Cantidad" name="Cantidad" type="number" min="1" step="1" required />
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Guardar y marcar atendida</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('crud.medicos') }}">Volver</a>
+    </div>
+  </form>
+  {% else %}
+    <p class="text-muted">No se encontró la consulta.</p>
+  {% endif %}
+</main>
+{% endblock %}

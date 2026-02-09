@@ -464,6 +464,7 @@ def pacientes():
 
             # Mis consultas (solo las del paciente actual)
             consultas = []
+            consultas_recibidas = []
             recetas = []
             if paciente_id is not None:
                 cur.execute(
@@ -475,6 +476,19 @@ def pacientes():
                     (paciente_id,),
                 )
                 consultas = cur.fetchall() or []
+
+                # Consultas recibidas con receta asignada (indicador de consulta realizada)
+                cur.execute(
+                    "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
+                    "m.Nombre AS NombreMedico "
+                    "FROM consultas c "
+                    "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
+                    "WHERE c.IdPaciente=%s "
+                    "AND EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) "
+                    "ORDER BY c.FechaConsulta DESC",
+                    (paciente_id,),
+                )
+                consultas_recibidas = cur.fetchall() or []
 
                 # Mis recetas vinculadas a las consultas del paciente
                 cur.execute(
@@ -500,6 +514,7 @@ def pacientes():
             "paciente_dashboard.html",
             paciente=paciente_row,
             consultas=consultas,
+            consultas_recibidas=consultas_recibidas,
             recetas=recetas,
             especialidades=especialidades,
         )
@@ -532,6 +547,7 @@ def agendar_cita():
     id_especialidad = (request.args.get("idEspecialidad") or "").strip()
     id_medico = (request.args.get("idMedico") or "").strip()
     fecha_sel = (request.args.get("fecha") or "").strip()
+    conflict = (request.args.get("conflict") or "").strip()
 
     # Validar fecha seleccionada
     if fecha_sel:
@@ -652,6 +668,11 @@ def agendar_cita():
         nombre_mes=nombre_mes,
         es_primer_mes=es_primer_mes,
         es_ultimo_mes=es_ultimo_mes,
+        conflict_modal_message=(
+            "Ya tienes una cita agendada en esa fecha y hora. No puedes agendar otra en ese momento."
+            if conflict
+            else ""
+        ),
     )
 
 
@@ -756,6 +777,26 @@ def agendar_cita_confirmar():
                 )
             )
 
+        # Validar choque del paciente (no puede tener dos citas en el mismo horario)
+        cur.execute(
+            "SELECT 1 FROM consultas "
+            "WHERE IdPaciente=%s AND FechaConsulta=%s "
+            "AND NOT (HF <= %s OR HI >= %s) LIMIT 1",
+            (paciente_id, fecha, hi_db, hf),
+        )
+        patient_clash = cur.fetchone()
+        if patient_clash:
+            cur.close()
+            return redirect(
+                url_for(
+                    "crud.agendar_cita",
+                    idEspecialidad=id_especialidad,
+                    idMedico=id_medico,
+                    fecha=fecha,
+                    conflict=1,
+                )
+            )
+
         # Insertar consulta con Diagnostico pendiente
         cur.execute(
             "INSERT INTO consultas(IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico) "
@@ -806,11 +847,13 @@ def medicos():
             medico_id = medico_row["IdMedico"]
 
             consultas = []
+            consultas_realizadas = []
             recetas = []
 
             # Consultas realizadas por este médico
             cur.execute(
                 "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
+                "EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) AS Atendida, "
                 "p.Nombre AS NombrePaciente "
                 "FROM consultas c "
                 "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
@@ -818,6 +861,19 @@ def medicos():
                 (medico_id,),
             )
             consultas = cur.fetchall() or []
+
+            # Consultas realizadas con receta asignada (indicador de consulta realizada)
+            cur.execute(
+                "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
+                "p.Nombre AS NombrePaciente "
+                "FROM consultas c "
+                "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
+                "WHERE c.IdMedico=%s "
+                "AND EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) "
+                "ORDER BY c.FechaConsulta DESC",
+                (medico_id,),
+            )
+            consultas_realizadas = cur.fetchall() or []
 
             # Recetas emitidas por este médico (a través de sus consultas)
             cur.execute(
@@ -839,11 +895,410 @@ def medicos():
             "medico_dashboard.html",
             medico=medico_row,
             consultas=consultas,
+            consultas_realizadas=consultas_realizadas,
             recetas=recetas,
         )
 
     flash("No tiene permiso para acceder al módulo Médico", "danger")
     return redirect(url_for("crud.index"))
+
+
+@bp.route("/medicos/consultas/<int:id_consulta>/atender", methods=["GET", "POST"], strict_slashes=False)
+def atender_consulta(id_consulta: int):
+    if "user_id" not in session:
+        return redirect(url_for("crud.login", next=request.path))
+
+    if session.get("user_role") != 2:
+        flash("No tiene permiso para atender consultas", "danger")
+        return redirect(url_for("crud.index"))
+
+    user_id = session.get("user_id")
+
+    with get_connection(current_app) as cn:
+        cur = cn.cursor(dictionary=True)
+
+        # Médico vinculado a este usuario
+        cur.execute("SELECT IdMedico, Nombre FROM medicos WHERE IdUsuario=%s", (user_id,))
+        medico_row = cur.fetchone()
+        if not medico_row:
+            cur.close()
+            flash("No tiene un registro de médico asociado a este usuario", "danger")
+            return redirect(url_for("crud.index"))
+
+        medico_id = medico_row["IdMedico"]
+
+        # Cargar consulta (solo si pertenece al médico)
+        cur.execute(
+            "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
+            "p.Nombre AS NombrePaciente "
+            "FROM consultas c "
+            "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
+            "WHERE c.IdConsulta=%s AND c.IdMedico=%s",
+            (id_consulta, medico_id),
+        )
+        consulta_row = cur.fetchone()
+        if not consulta_row:
+            cur.close()
+            flash("Consulta no encontrada o no pertenece a este médico", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        # Si ya tiene receta, ya está atendida
+        cur.execute("SELECT 1 FROM recetas WHERE IdConsulta=%s LIMIT 1", (id_consulta,))
+        if cur.fetchone():
+            cur.close()
+            flash("Esta consulta ya fue atendida (ya tiene receta asignada)", "warning")
+            return redirect(url_for("crud.medicos"))
+
+        # Medicamentos para la receta
+        cur.execute("SELECT IdMedicamento, Nombre FROM medicamentos ORDER BY Nombre")
+        medicamentos = cur.fetchall() or []
+
+        if request.method == "POST":
+            diagnostico = (request.form.get("Diagnostico") or "").strip()
+            id_medicamento = (request.form.get("IdMedicamento") or "").strip()
+            cantidad_s = (request.form.get("Cantidad") or "").strip()
+
+            errors: list[str] = []
+            if not diagnostico:
+                errors.append("Debe ingresar el diagnóstico")
+            if not id_medicamento:
+                errors.append("Debe seleccionar un medicamento")
+            try:
+                cantidad = int(cantidad_s)
+                if cantidad <= 0:
+                    raise ValueError()
+            except Exception:
+                errors.append("La cantidad debe ser un número mayor a 0")
+
+            if errors:
+                for e in errors:
+                    flash(e, "danger")
+            else:
+                # Asegurar nuevamente que no se atendió (carrera)
+                cur.execute("SELECT 1 FROM recetas WHERE IdConsulta=%s LIMIT 1", (id_consulta,))
+                if cur.fetchone():
+                    cur.close()
+                    flash("Esta consulta ya fue atendida por otro proceso", "warning")
+                    return redirect(url_for("crud.medicos"))
+
+                cur.execute(
+                    "UPDATE consultas SET Diagnostico=%s WHERE IdConsulta=%s AND IdMedico=%s",
+                    (diagnostico, id_consulta, medico_id),
+                )
+                cur.execute(
+                    "INSERT INTO recetas(IdConsulta, IdMedicamento, Cantidad) VALUES(%s,%s,%s)",
+                    (id_consulta, int(id_medicamento), cantidad),
+                )
+                cn.commit()
+                cur.close()
+                flash("Consulta atendida: diagnóstico actualizado y receta asignada", "success")
+                return redirect(url_for("crud.medicos"))
+
+        cur.close()
+
+    return render_template(
+        "atender_consulta.html",
+        consulta=consulta_row,
+        medicamentos=medicamentos,
+    )
+
+
+@bp.get("/medicos/consultas/<int:id_consulta>/siguiente-cita")
+def siguiente_cita(id_consulta: int):
+    if "user_id" not in session:
+        return redirect(url_for("crud.login", next=request.path))
+
+    if session.get("user_role") != 2:
+        flash("No tiene permiso para agendar citas", "danger")
+        return redirect(url_for("crud.index"))
+
+    today = date.today()
+
+    # Parámetros de navegación
+    mes = _parse_int(request.args.get("mes"), today.month)
+    anio = _parse_int(request.args.get("anio"), today.year)
+
+    if (anio, mes) < (today.year, today.month):
+        anio, mes = today.year, today.month
+    if (anio, mes) > (_MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month):
+        anio, mes = _MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month
+
+    fecha_sel = (request.args.get("fecha") or "").strip()
+    if fecha_sel:
+        try:
+            fecha_obj = datetime.strptime(fecha_sel, "%Y-%m-%d").date()
+            if fecha_obj < today or fecha_obj > _MAX_AGENDAR_FECHA:
+                fecha_sel = ""
+        except Exception:
+            fecha_sel = ""
+
+    user_id = int(session.get("user_id"))
+
+    with get_connection(current_app) as cn:
+        cur = cn.cursor(dictionary=True)
+
+        # Médico
+        cur.execute(
+            "SELECT m.IdMedico, m.Nombre, m.Especialidad, e.IdEsp, e.Descripcion, e.Dias, e.Franja_HI, e.Franja_HF "
+            "FROM medicos m LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+            "WHERE m.IdUsuario=%s",
+            (user_id,),
+        )
+        medico_row = cur.fetchone()
+        if not medico_row:
+            cur.close()
+            flash("No tiene un registro de médico asociado a este usuario", "danger")
+            return redirect(url_for("crud.index"))
+
+        medico_id = int(medico_row["IdMedico"])
+        id_especialidad = str(medico_row.get("IdEsp") or medico_row.get("Especialidad") or "").strip()
+        id_medico = str(medico_id)
+
+        # Consulta original (debe pertenecer al médico)
+        cur.execute(
+            "SELECT c.IdConsulta, c.IdPaciente, p.Nombre AS NombrePaciente "
+            "FROM consultas c LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
+            "WHERE c.IdConsulta=%s AND c.IdMedico=%s",
+            (id_consulta, medico_id),
+        )
+        consulta_row = cur.fetchone()
+        if not consulta_row:
+            cur.close()
+            flash("Consulta no encontrada o no pertenece a este médico", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        # Solo permitir siguiente cita si la consulta ya fue atendida (tiene receta)
+        cur.execute("SELECT 1 FROM recetas WHERE IdConsulta=%s LIMIT 1", (id_consulta,))
+        if not cur.fetchone():
+            cur.close()
+            flash("La consulta aún no está atendida (no tiene receta)", "warning")
+            return redirect(url_for("crud.medicos"))
+
+        paciente_id = int(consulta_row["IdPaciente"])
+
+        # Reutilizar el mismo UI de agendar_cita.html, pero con especialidad/médico fijos
+        especialidades = [
+            {
+                "IdEsp": medico_row.get("IdEsp") or medico_row.get("Especialidad"),
+                "Descripcion": medico_row.get("Descripcion") or medico_row.get("NombreEspecialidad") or "",
+                "Dias": medico_row.get("Dias"),
+                "Franja_HI": medico_row.get("Franja_HI"),
+                "Franja_HF": medico_row.get("Franja_HF"),
+            }
+        ]
+        medicos = [{"IdMedico": medico_id, "Nombre": medico_row.get("Nombre") or ""}]
+
+        dias_con_horarios: dict[str, int] = {}
+        horarios: list[str] = []
+
+        dias_permitidos = _dias_str_to_weekdays(str(medico_row.get("Dias") or ""))
+        franja_hi = medico_row.get("Franja_HI")
+        franja_hf = medico_row.get("Franja_HF")
+
+        _, days_in_month = pycalendar.monthrange(anio, mes)
+        for day in range(1, days_in_month + 1):
+            d = date(anio, mes, day)
+            if d < today or d > _MAX_AGENDAR_FECHA:
+                continue
+            if dias_permitidos and d.weekday() not in dias_permitidos:
+                continue
+            iso = d.isoformat()
+            slots = _get_available_slots_30m(cn, medico_id, iso, franja_hi, franja_hf)
+            if d == today:
+                now = datetime.now()
+                now_min = now.hour * 60 + now.minute
+                slots = [s for s in slots if _time_to_minutes(s) > now_min]
+            if slots:
+                dias_con_horarios[iso] = len(slots)
+
+        if fecha_sel:
+            try:
+                dsel = datetime.strptime(fecha_sel, "%Y-%m-%d").date()
+            except Exception:
+                dsel = None
+
+            if dsel and (not dias_permitidos or dsel.weekday() in dias_permitidos) and dsel >= today:
+                horarios = _get_available_slots_30m(cn, medico_id, fecha_sel, franja_hi, franja_hf)
+                if dsel == today:
+                    now = datetime.now()
+                    now_min = now.hour * 60 + now.minute
+                    horarios = [s for s in horarios if _time_to_minutes(s) > now_min]
+            else:
+                fecha_sel = ""
+
+        cur.close()
+
+    calendario = _build_calendar(anio, mes, today, fecha_sel or None, dias_con_horarios)
+    nombre_mes = f"{_month_name_es(mes)} {anio}"
+
+    es_primer_mes = (anio, mes) == (today.year, today.month)
+    es_ultimo_mes = (anio, mes) == (_MAX_AGENDAR_FECHA.year, _MAX_AGENDAR_FECHA.month)
+
+    return render_template(
+        "agendar_cita.html",
+        especialidades=especialidades,
+        medicos=medicos,
+        id_especialidad=id_especialidad,
+        id_medico=id_medico,
+        mes=mes,
+        anio=anio,
+        fecha=fecha_sel,
+        calendario=calendario,
+        dias_con_horarios=dias_con_horarios,
+        horarios=horarios,
+        nombre_mes=nombre_mes,
+        es_primer_mes=es_primer_mes,
+        es_ultimo_mes=es_ultimo_mes,
+        agendar_get_action=url_for("crud.siguiente_cita", id_consulta=id_consulta),
+        agendar_post_action=url_for("crud.siguiente_cita_confirmar", id_consulta=id_consulta),
+        volver_url=url_for("crud.medicos"),
+        extra_get_params={"idConsulta": str(id_consulta)},
+        extra_post_params={"IdPaciente": str(paciente_id)},
+    )
+
+
+@bp.post("/medicos/consultas/<int:id_consulta>/siguiente-cita/confirmar")
+def siguiente_cita_confirmar(id_consulta: int):
+    if "user_id" not in session:
+        return redirect(url_for("crud.login", next=request.path))
+
+    if session.get("user_role") != 2:
+        flash("No tiene permiso para agendar citas", "danger")
+        return redirect(url_for("crud.index"))
+
+    id_especialidad = (request.form.get("IdEspecialidad") or "").strip()
+    id_medico = (request.form.get("IdMedico") or "").strip()
+    fecha = (request.form.get("FechaConsulta") or "").strip()
+    hi = (request.form.get("HI") or "").strip()
+    id_paciente = (request.form.get("IdPaciente") or "").strip()
+
+    if not (id_especialidad and id_medico and fecha and hi and id_paciente):
+        flash("Complete especialidad, médico, fecha y horario.", "warning")
+        return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta))
+
+    try:
+        fecha_obj = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except Exception:
+        flash("Fecha inválida.", "warning")
+        return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta))
+
+    if fecha_obj < date.today() or fecha_obj > _MAX_AGENDAR_FECHA:
+        flash("La fecha seleccionada no está permitida.", "warning")
+        return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta))
+
+    # HF = HI + 30 min
+    try:
+        hi_min = _time_to_minutes(hi)
+        hf_min = hi_min + 30
+        hf = _minutes_to_hhmm(hf_min) + ":00"
+        hi_db = hi + ":00" if len(hi) == 5 else hi
+    except Exception:
+        flash("Horario inválido.", "warning")
+        return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta))
+
+    user_id = int(session.get("user_id"))
+
+    with get_connection(current_app) as cn:
+        cur = cn.cursor(dictionary=True)
+
+        # Médico del usuario (evitar que agende con otro médico)
+        cur.execute("SELECT IdMedico, Especialidad FROM medicos WHERE IdUsuario=%s", (user_id,))
+        medico_row = cur.fetchone()
+        if not medico_row:
+            cur.close()
+            flash("No tiene un registro de médico asociado a este usuario.", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        if str(medico_row.get("IdMedico")) != str(id_medico):
+            cur.close()
+            flash("Médico inválido.", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        # Consulta original y paciente (evitar manipulación de IdPaciente)
+        cur.execute(
+            "SELECT c.IdPaciente FROM consultas c WHERE c.IdConsulta=%s AND c.IdMedico=%s",
+            (id_consulta, medico_row["IdMedico"]),
+        )
+        consulta_row = cur.fetchone()
+        if not consulta_row:
+            cur.close()
+            flash("Consulta no encontrada o no pertenece a este médico", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        if str(consulta_row.get("IdPaciente")) != str(id_paciente):
+            cur.close()
+            flash("Paciente inválido.", "danger")
+            return redirect(url_for("crud.medicos"))
+
+        # Validar que la consulta original está atendida
+        cur.execute("SELECT 1 FROM recetas WHERE IdConsulta=%s LIMIT 1", (id_consulta,))
+        if not cur.fetchone():
+            cur.close()
+            flash("La consulta aún no está atendida.", "warning")
+            return redirect(url_for("crud.medicos"))
+
+        # Validar médico vs especialidad y obtener franja/días
+        cur.execute(
+            "SELECT m.IdMedico, e.Dias, e.Franja_HI, e.Franja_HF "
+            "FROM medicos m LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
+            "WHERE m.IdMedico=%s AND m.Especialidad=%s",
+            (id_medico, id_especialidad),
+        )
+        medico_especialidad_row = cur.fetchone()
+        if not medico_especialidad_row:
+            cur.close()
+            flash("El médico no corresponde a la especialidad.", "warning")
+            return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta))
+
+        dias_permitidos = _dias_str_to_weekdays(str(medico_especialidad_row.get("Dias") or ""))
+        if dias_permitidos and fecha_obj.weekday() not in dias_permitidos:
+            cur.close()
+            flash("La especialidad no atiende en el día seleccionado.", "warning")
+            return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta, fecha=fecha))
+
+        franja_hi = medico_especialidad_row.get("Franja_HI")
+        franja_hf = medico_especialidad_row.get("Franja_HF")
+        slots = _get_available_slots_30m(cn, int(id_medico), fecha, franja_hi, franja_hf)
+        if hi not in slots:
+            cur.close()
+            flash("El horario seleccionado ya no está disponible.", "warning")
+            return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta, fecha=fecha))
+
+        # Validar choque
+        cur.execute(
+            "SELECT 1 FROM consultas "
+            "WHERE IdMedico=%s AND FechaConsulta=%s "
+            "AND NOT (HF <= %s OR HI >= %s) LIMIT 1",
+            (id_medico, fecha, hi_db, hf),
+        )
+        if cur.fetchone():
+            cur.close()
+            flash("Ese horario acaba de ocuparse. Seleccione otro.", "warning")
+            return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta, fecha=fecha))
+
+        # Validar choque del paciente (no puede tener dos citas en el mismo horario)
+        cur.execute(
+            "SELECT 1 FROM consultas "
+            "WHERE IdPaciente=%s AND FechaConsulta=%s "
+            "AND NOT (HF <= %s OR HI >= %s) LIMIT 1",
+            (int(id_paciente), fecha, hi_db, hf),
+        )
+        if cur.fetchone():
+            cur.close()
+            flash("El paciente ya tiene una cita agendada en esa fecha y hora.", "warning")
+            return redirect(url_for("crud.siguiente_cita", id_consulta=id_consulta, fecha=fecha, conflict=1))
+
+        # Insertar nueva consulta (siguiente cita)
+        cur.execute(
+            "INSERT INTO consultas(IdMedico, IdPaciente, FechaConsulta, HI, HF, Diagnostico) "
+            "VALUES(%s,%s,%s,%s,%s,%s)",
+            (id_medico, int(id_paciente), fecha, hi_db, hf, "Pendiente"),
+        )
+        cn.commit()
+        cur.close()
+
+    flash("Siguiente cita agendada correctamente.", "success")
+    return redirect(url_for("crud.medicos"))
 
 
 @bp.route("/especialidades", methods=["GET", "POST"], strict_slashes=False)

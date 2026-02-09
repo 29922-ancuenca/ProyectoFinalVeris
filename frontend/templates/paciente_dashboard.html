@@ -147,8 +147,8 @@
     </div>
 
     <div class="tab-pane fade" id="consultas-recibidas" role="tabpanel" aria-labelledby="tab-consultas-recibidas">
-      {% if consultas %}
-      <p class="text-muted">Listado de todas las consultas que has recibido.</p>
+      {% if consultas_recibidas %}
+      <p class="text-muted">Listado de consultas recibidas con receta asignada.</p>
       <div class="table-responsive">
         <table class="table table-bordered table-striped">
           <thead>
@@ -161,7 +161,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for c in consultas %}
+            {% for c in consultas_recibidas %}
             <tr>
               <td>{{ c.NombreMedico }}</td>
               <td>{{ c.FechaConsulta }}</td>

@@ -28,7 +28,7 @@
 
   <div class="row">
     <div class="col-lg-6 mb-4">
-      <form method="get" action="{{ url_for('crud.agendar_cita') }}" id="formAgendar">
+      <form method="get" action="{{ agendar_get_action or url_for('crud.agendar_cita') }}" id="formAgendar">
         <div class="card shadow-sm mb-4">
           <div class="card-body">
             <h5 class="card-title mb-3">
@@ -70,6 +70,11 @@
         <input type="hidden" name="mes" id="mesActual" value="{{ mes }}">
         <input type="hidden" name="anio" id="anioActual" value="{{ anio }}">
         <input type="hidden" name="fecha" id="fechaSeleccionada" value="{{ fecha }}">
+        {% if extra_get_params %}
+          {% for k, v in extra_get_params.items() %}
+            <input type="hidden" name="{{ k }}" value="{{ v }}">
+          {% endfor %}
+        {% endif %}
       </form>
 
       {% if horarios and horarios|length > 0 %}
@@ -77,11 +82,16 @@
           <div class="card-body">
             <h5 class="card-title mb-3"><i class="bi bi-clock"></i> Horarios Disponibles</h5>
 
-            <form method="post" action="{{ url_for('crud.agendar_cita_confirmar') }}" id="formConfirmar">
+            <form method="post" action="{{ agendar_post_action or url_for('crud.agendar_cita_confirmar') }}" id="formConfirmar">
               <input type="hidden" name="IdEspecialidad" value="{{ id_especialidad }}">
               <input type="hidden" name="IdMedico" value="{{ id_medico }}">
               <input type="hidden" name="FechaConsulta" value="{{ fecha }}">
               <input type="hidden" name="HI" id="horarioSeleccionado" required>
+              {% if extra_post_params %}
+                {% for k, v in extra_post_params.items() %}
+                  <input type="hidden" name="{{ k }}" value="{{ v }}">
+                {% endfor %}
+              {% endif %}
 
               <div class="agendar-horario-grid">
                 {% for h in horarios %}
@@ -105,8 +115,8 @@
       {% endif %}
 
       <div class="mt-3">
-        <a class="btn btn-outline-primary" href="{{ url_for('crud.pacientes') }}">
-          <i class="bi bi-arrow-left"></i> Volver al módulo Paciente
+        <a class="btn btn-outline-primary" href="{{ volver_url or url_for('crud.pacientes') }}">
+          <i class="bi bi-arrow-left"></i> Volver
         </a>
       </div>
     </div>
@@ -240,8 +250,37 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL CONFLICTO (CITA DUPLICADA) -->
+<div class="modal fade" id="modalCitaDuplicada" tabindex="-1" aria-labelledby="modalCitaDuplicadaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="modalCitaDuplicadaLabel"><i class="bi bi-exclamation-triangle"></i> No se puede agendar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0" id="modalCitaDuplicadaMsg">{{ conflict_modal_message }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/agendar-citas.js') }}"></script>
+{% if conflict_modal_message %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('modalCitaDuplicada');
+    if (modalEl) {
+      var modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  });
+</script>
+{% endif %}
 {% endblock %}
