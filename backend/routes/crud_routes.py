@@ -532,6 +532,8 @@ def agendar_cita():
         flash("No tiene permiso para acceder al agendamiento de citas", "danger")
         return redirect(url_for("crud.index"))
 
+    user_id = int(session.get("user_id"))
+
     today = date.today()
 
     # Parámetros de navegación
@@ -560,6 +562,10 @@ def agendar_cita():
 
     with get_connection(current_app) as cn:
         cur = cn.cursor(dictionary=True)
+
+        # Datos para navbar (paciente)
+        cur.execute("SELECT Nombre, Foto FROM pacientes WHERE IdUsuario=%s", (user_id,))
+        nav_user = cur.fetchone() or {}
 
         # Especialidades
         cur.execute("SELECT IdEsp, Descripcion, Dias, Franja_HI, Franja_HF FROM especialidades ORDER BY Descripcion")
@@ -668,6 +674,8 @@ def agendar_cita():
         nombre_mes=nombre_mes,
         es_primer_mes=es_primer_mes,
         es_ultimo_mes=es_ultimo_mes,
+        nav_nombre=(session.get("user_name") or ""),
+        nav_foto=(nav_user.get("Foto") or ""),
         conflict_modal_message=(
             "Ya tienes una cita agendada en esa fecha y hora. No puedes agendar otra en ese momento."
             if conflict
@@ -918,7 +926,7 @@ def atender_consulta(id_consulta: int):
         cur = cn.cursor(dictionary=True)
 
         # Médico vinculado a este usuario
-        cur.execute("SELECT IdMedico, Nombre FROM medicos WHERE IdUsuario=%s", (user_id,))
+        cur.execute("SELECT IdMedico, Nombre, Foto FROM medicos WHERE IdUsuario=%s", (user_id,))
         medico_row = cur.fetchone()
         if not medico_row:
             cur.close()
@@ -1000,6 +1008,8 @@ def atender_consulta(id_consulta: int):
         "atender_consulta.html",
         consulta=consulta_row,
         medicamentos=medicamentos,
+        nav_nombre=(session.get("user_name") or ""),
+        nav_foto=(medico_row.get("Foto") or ""),
     )
 
 
@@ -1039,7 +1049,7 @@ def siguiente_cita(id_consulta: int):
 
         # Médico
         cur.execute(
-            "SELECT m.IdMedico, m.Nombre, m.Especialidad, e.IdEsp, e.Descripcion, e.Dias, e.Franja_HI, e.Franja_HF "
+            "SELECT m.IdMedico, m.Nombre, m.Foto, m.Especialidad, e.IdEsp, e.Descripcion, e.Dias, e.Franja_HI, e.Franja_HF "
             "FROM medicos m LEFT JOIN especialidades e ON m.Especialidad = e.IdEsp "
             "WHERE m.IdUsuario=%s",
             (user_id,),
@@ -1154,6 +1164,8 @@ def siguiente_cita(id_consulta: int):
         volver_url=url_for("crud.medicos"),
         extra_get_params={"idConsulta": str(id_consulta)},
         extra_post_params={"IdPaciente": str(paciente_id)},
+        nav_nombre=(session.get("user_name") or ""),
+        nav_foto=(medico_row.get("Foto") or ""),
     )
 
 

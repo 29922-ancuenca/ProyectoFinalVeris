@@ -1,6 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Atender consulta - Proyecto VERIS{% endblock %}
 
+{% block nav %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm py-2">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex flex-column align-items-start" href="{{ url_for('crud.index') }}">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Veris" class="img-fluid mb-1" style="height: 35px; width: auto;">
+      <span class="slogan">Hacemos <strong>fácil cuidarte</strong></span>
+    </a>
+
+    <div class="d-flex flex-wrap ms-auto align-items-center mt-2 mt-lg-0">
+      {% if session.get('user_name') %}
+        {% if nav_foto %}
+          <img src="{{ url_for('static', filename='img/usuarios/' ~ nav_foto) }}" alt="{{ nav_nombre or session['user_name'] }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+        {% endif %}
+        <span class="navbar-text me-3 fw-semibold">{{ nav_nombre or session['user_name'] }}</span>
+        <a href="{{ url_for('crud.logout') }}" class="btn btn-primary btn-sm">Logout</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
 <main class="container my-4">
   <h2 class="mb-3 text-primary">Atender consulta</h2>

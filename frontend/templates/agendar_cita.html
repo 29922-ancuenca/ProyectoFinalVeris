@@ -12,7 +12,10 @@
 
     <div class="d-flex flex-wrap ms-auto align-items-center mt-2 mt-lg-0">
       {% if session.get('user_name') %}
-        <span class="navbar-text me-3 fw-semibold">{{ session['user_name'] }}</span>
+        {% if nav_foto %}
+          <img src="{{ url_for('static', filename='img/usuarios/' ~ nav_foto) }}" alt="{{ nav_nombre or session['user_name'] }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+        {% endif %}
+        <span class="navbar-text me-3 fw-semibold">{{ nav_nombre or session['user_name'] }}</span>
         <a href="{{ url_for('crud.logout') }}" class="btn btn-primary btn-sm">Logout</a>
       {% endif %}
     </div>
