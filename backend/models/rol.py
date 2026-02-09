@@ -87,22 +87,17 @@ class Rol:
         rows: List[Dict[str, Any]] = cur.fetchall() or []
         cur.close()
 
-        d_new = self._d_encode("new", 0)
         header = "".join(f"<th>{h}</th>" for h in ["Nombre", "Accion", "Acciones"])
         body = ""
         for r in rows:
             pk = int(r["IdRol"])
-            d_act = self._d_encode("act", pk)
             d_det = self._d_encode("det", pk)
-            d_del = self._d_encode("del", pk)
             body += (
                 "<tr>"
                 f"<td>{html.escape(str(r.get('Nombre','')))}</td>"
                 f"<td>{html.escape(str(r.get('Accion','')))}</td>"
                 "<td>"
-                f"<a class='btn btn-sm btn-primary me-1' href='{self.path}?d={d_act}'>Editar</a>"
                 f"<a class='btn btn-sm btn-outline-secondary me-1' href='{self.path}?d={d_det}'>Detalle</a>"
-                f"<a class='btn btn-sm btn-danger' href='{self.path}?d={d_del}' data-veris-confirm='¿Eliminar este registro?'>Eliminar</a>"
                 "</td>"
                 "</tr>"
             )
@@ -110,7 +105,6 @@ class Rol:
         return (
             "<main class='container my-4 veris-tabla-container'>"
             f"<h2 class='veris-tabla-title'>{html.escape(self.title)}</h2>"
-            f"<p class='veris-tabla-actions'><a class='btn veris-tabla-btn-crear' href='{self.path}?d={d_new}'>Crear nuevo</a></p>"
             "<div class='veris-tabla-wrapper'>"
             "<table class='table veris-tabla table-bordered table-striped'>"
             f"<thead class='veris-tabla-thead'><tr>{header}</tr></thead>"
@@ -121,38 +115,7 @@ class Rol:
         )
 
     def get_form(self, id: int = 0) -> str:
-        is_new = id == 0
-        op = "new" if is_new else "act"
-        values = {"IdRol": "", "Nombre": "", "Accion": ""}
-        if not is_new:
-            cur = self.cn.cursor(dictionary=True)
-            cur.execute(self.sql_detail, (id,))
-            row = cur.fetchone()
-            cur.close()
-            if not row:
-                return self._msg_error("Registro no encontrado")
-            values = {
-                "IdRol": str(row.get("IdRol", "")),
-                "Nombre": str(row.get("Nombre", "")),
-                "Accion": str(row.get("Accion", "")),
-            }
-
-        d = self._d_encode(op, id)
-        form = ""
-        # No mostrar IdRol en el formulario (se maneja internamente con d)
-        form += self._input("Nombre", "Nombre", values["Nombre"], False)
-        form += self._input("Accion", "Accion", values["Accion"], False)
-
-        title = "Nuevo Rol" if is_new else f"Actualizar Rol"
-        return (
-            f"<h2 class='mb-3'>{html.escape(title)}</h2>"
-            f"<form method='post'>"
-            f"<input type='hidden' name='d' value='{html.escape(d)}' />"
-            f"{form}"
-            "<button class='btn btn-primary' type='submit'>Guardar</button> "
-            f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
-            "</form>"
-        )
+        return self._msg_error("Los roles no pueden ser creados ni modificados")
 
     def get_detail(self, id: int) -> str:
         cur = self.cn.cursor(dictionary=True)
@@ -176,40 +139,7 @@ class Rol:
         )
 
     def save(self, form_data) -> str:
-        d = form_data.get("d", "")
-        try:
-            op, id_ = self._d_decode(d)
-        except Exception:
-            return self._msg_error("Parámetro d inválido")
-
-        nombre = (form_data.get("Nombre") or "").strip()
-        accion = (form_data.get("Accion") or "").strip()
-
-        try:
-            cur = self.cn.cursor()
-            if op == "new":
-                cur.execute(self.sql_insert, (nombre, accion))
-                self.cn.commit()
-                cur.close()
-                return self._msg_success("Rol creado correctamente")
-
-            if op == "act":
-                cur.execute(self.sql_update, (nombre, accion, id_))
-                self.cn.commit()
-                cur.close()
-                return self._msg_success("Rol actualizado correctamente")
-
-            cur.close()
-            return self._msg_error("Operación no permitida")
-        except Exception as ex:
-            return self._msg_error(f"Error SQL: {ex}")
+        return self._msg_error("Los roles no pueden ser creados ni modificados")
 
     def delete(self, id: int) -> str:
-        try:
-            cur = self.cn.cursor()
-            cur.execute(self.sql_delete, (id,))
-            self.cn.commit()
-            cur.close()
-            return self._msg_success("Rol eliminado correctamente")
-        except Exception as ex:
-            return self._msg_error(f"Error SQL: {ex}")
+        return self._msg_error("Los roles no pueden ser eliminados")

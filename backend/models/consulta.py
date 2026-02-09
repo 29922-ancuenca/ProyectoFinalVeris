@@ -276,6 +276,13 @@ class Consulta:
 
     def delete(self, id: int) -> str:
         try:
+            curv = self.cn.cursor(dictionary=True)
+            curv.execute("SELECT 1 FROM recetas WHERE IdConsulta=%s LIMIT 1", (id,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("No se puede eliminar la consulta porque tiene una receta asignada")
+            curv.close()
+
             cur = self.cn.cursor()
             cur.execute(self.sql_delete, (id,))
             self.cn.commit()

@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block head_extra %}{% endblock %}
   </head>
-  <body class="{% block body_class %}{% endblock %}">
+  <body class="{% block body_class %}{% endblock %}" data-user-role="{{ session.get('user_role','') }}">
     {% block nav %}
       {% if navbar_html is defined and navbar_html %}
         {{ navbar_html|safe }}

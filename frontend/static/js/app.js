@@ -126,6 +126,20 @@
 	})();
 
 document.addEventListener("DOMContentLoaded", function () {
+	// Si existen alertas danger/warning, mostrarlas en modal y quitar del DOM.
+	// Solo aplica para el Administrador (rol=1) para no estorbar en flujos de paciente/médico.
+	var role = (document.body && document.body.getAttribute) ? String(document.body.getAttribute('data-user-role') || '') : '';
+	var isAdmin = role === '1';
+	var blockingAlerts = isAdmin ? Array.prototype.slice.call(document.querySelectorAll('.alert.alert-danger, .alert.alert-warning')) : [];
+	if (blockingAlerts.length && window.VerisModal && window.VerisModal.alert) {
+		var first = blockingAlerts[0];
+		var msg = first ? (first.textContent || '').trim() : '';
+		// Limpiar todas las alertas bloqueantes para que no dupliquen el mensaje
+		blockingAlerts.forEach(function (a) {
+			if (a && a.parentNode) a.parentNode.removeChild(a);
+		});
+		if (msg) window.VerisModal.alert(msg, 'Acción no permitida');
+	}
 
 	// Ocultar automáticamente mensajes flash (por ejemplo "Sesión cerrada")
 	var alerts = document.querySelectorAll(".alert");

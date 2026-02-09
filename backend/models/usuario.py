@@ -288,6 +288,18 @@ class Usuario:
 
     def delete(self, id: int) -> str:
         try:
+            # No permitir eliminar si está asociado a médico o paciente
+            curv = self.cn.cursor(dictionary=True)
+            curv.execute("SELECT 1 FROM medicos WHERE IdUsuario=%s LIMIT 1", (id,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("No se puede eliminar el usuario porque está asociado a un médico")
+            curv.execute("SELECT 1 FROM pacientes WHERE IdUsuario=%s LIMIT 1", (id,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("No se puede eliminar el usuario porque está asociado a un paciente")
+            curv.close()
+
             cur = self.cn.cursor()
             cur.execute(self.sql_delete, (id,))
             self.cn.commit()

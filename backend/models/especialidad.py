@@ -378,6 +378,13 @@ class Especialidad:
 
     def delete(self, id: int) -> str:
         try:
+            curv = self.cn.cursor(dictionary=True)
+            curv.execute("SELECT 1 FROM medicos WHERE Especialidad=%s LIMIT 1", (id,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("No se puede eliminar la especialidad porque está asociada a un médico")
+            curv.close()
+
             cur = self.cn.cursor()
             cur.execute(self.sql_delete, (id,))
             self.cn.commit()
