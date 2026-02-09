@@ -19,21 +19,14 @@
 <main class="container my-5 veris-register-container" aria-labelledby="title">
   <h2 id="title" class="veris-register-title">Registrarse</h2>
 
-  <form action="{{ url_for('crud.register') }}" method="post" role="form" class="veris-register-form">
+  <form action="{{ url_for('crud.register') }}" method="post" enctype="multipart/form-data" role="form" class="veris-register-form">
     <h4 class="veris-register-subtitle">Cree una cuenta nueva</h4>
     <hr class="veris-register-divider" />
 
     <div class="row mb-3 align-items-center veris-register-group">
-      <label for="UserName" class="col-md-3 col-form-label veris-register-label">Nombre de usuario</label>
+      <label for="UserName" class="col-md-3 col-form-label veris-register-label">Usuario</label>
       <div class="col-md-9 veris-register-input-col">
         <input type="text" id="UserName" name="UserName" class="form-control veris-register-input" required />
-      </div>
-    </div>
-
-    <div class="row mb-3 align-items-center veris-register-group">
-      <label for="Email" class="col-md-3 col-form-label veris-register-label">Correo electrónico</label>
-      <div class="col-md-9 veris-register-input-col">
-        <input type="email" id="Email" name="Email" class="form-control veris-register-input" required />
       </div>
     </div>
 
@@ -45,9 +38,84 @@
     </div>
 
     <div class="row mb-3 align-items-center veris-register-group">
-      <label for="ConfirmPassword" class="col-md-3 col-form-label veris-register-label">Confirmar contraseña</label>
+      <label for="Rol" class="col-md-3 col-form-label veris-register-label">Rol</label>
       <div class="col-md-9 veris-register-input-col">
-        <input type="password" id="ConfirmPassword" name="ConfirmPassword" class="form-control veris-register-input" required />
+        <select id="Rol" name="Rol" class="form-select veris-register-input" required>
+          <option value="">Seleccione...</option>
+          {% for r in roles or [] %}
+            <option value="{{ r.IdRol }}">{{ r.Nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div id="perfilContainer" class="mt-4" style="display:none;">
+      <h4 class="veris-register-subtitle">Datos del perfil</h4>
+      <hr class="veris-register-divider" />
+
+      <div class="row mb-3 align-items-center veris-register-group">
+        <label for="NombrePerfil" class="col-md-3 col-form-label veris-register-label">Nombre completo</label>
+        <div class="col-md-9 veris-register-input-col">
+          <input type="text" id="NombrePerfil" name="NombrePerfil" class="form-control veris-register-input" />
+        </div>
+      </div>
+
+      <div class="row mb-3 align-items-center veris-register-group">
+        <label for="Foto" class="col-md-3 col-form-label veris-register-label">Foto (opcional)</label>
+        <div class="col-md-9 veris-register-input-col">
+          <input type="file" id="Foto" name="Foto" class="form-control veris-register-input" accept="image/*" />
+        </div>
+      </div>
+
+      <div id="pacienteFields" style="display:none;">
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Cedula" class="col-md-3 col-form-label veris-register-label">Cédula</label>
+          <div class="col-md-9 veris-register-input-col">
+            <input type="text" id="Cedula" name="Cedula" class="form-control veris-register-input" />
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Edad" class="col-md-3 col-form-label veris-register-label">Edad</label>
+          <div class="col-md-9 veris-register-input-col">
+            <input type="number" id="Edad" name="Edad" class="form-control veris-register-input" min="0" />
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Genero" class="col-md-3 col-form-label veris-register-label">Género</label>
+          <div class="col-md-9 veris-register-input-col">
+            <input type="text" id="Genero" name="Genero" class="form-control veris-register-input" />
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Estatura_cm" class="col-md-3 col-form-label veris-register-label">Estatura (cm)</label>
+          <div class="col-md-9 veris-register-input-col">
+            <input type="number" id="Estatura_cm" name="Estatura_cm" class="form-control veris-register-input" step="0.01" min="0" />
+          </div>
+        </div>
+
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Peso_kg" class="col-md-3 col-form-label veris-register-label">Peso (kg)</label>
+          <div class="col-md-9 veris-register-input-col">
+            <input type="number" id="Peso_kg" name="Peso_kg" class="form-control veris-register-input" step="0.01" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div id="medicoFields" style="display:none;">
+        <div class="row mb-3 align-items-center veris-register-group">
+          <label for="Especialidad" class="col-md-3 col-form-label veris-register-label">Especialidad</label>
+          <div class="col-md-9 veris-register-input-col">
+            <select id="Especialidad" name="Especialidad" class="form-select veris-register-input">
+              <option value="">Seleccione...</option>
+              {% for e in especialidades or [] %}
+                <option value="{{ e.IdEsp }}">{{ e.Descripcion }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -60,6 +128,68 @@
     </p>
   </form>
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const rolEl = document.getElementById('Rol');
+    const perfil = document.getElementById('perfilContainer');
+    const paciente = document.getElementById('pacienteFields');
+    const medico = document.getElementById('medicoFields');
+
+    const nombrePerfil = document.getElementById('NombrePerfil');
+    const cedula = document.getElementById('Cedula');
+    const edad = document.getElementById('Edad');
+    const genero = document.getElementById('Genero');
+    const especialidad = document.getElementById('Especialidad');
+
+    function setRequired(el, required) {
+      if (!el) return;
+      if (required) el.setAttribute('required', 'required');
+      else el.removeAttribute('required');
+    }
+
+    function applyRole() {
+      const v = (rolEl && rolEl.value) ? rolEl.value : '';
+      if (!v) {
+        perfil.style.display = 'none';
+        paciente.style.display = 'none';
+        medico.style.display = 'none';
+        setRequired(nombrePerfil, false);
+        setRequired(cedula, false);
+        setRequired(edad, false);
+        setRequired(genero, false);
+        setRequired(especialidad, false);
+        return;
+      }
+
+      perfil.style.display = '';
+      setRequired(nombrePerfil, true);
+
+      if (v === '3') {
+        paciente.style.display = '';
+        medico.style.display = 'none';
+        setRequired(cedula, true);
+        setRequired(edad, true);
+        setRequired(genero, true);
+        setRequired(especialidad, false);
+      } else if (v === '2') {
+        paciente.style.display = 'none';
+        medico.style.display = '';
+        setRequired(cedula, false);
+        setRequired(edad, false);
+        setRequired(genero, false);
+        setRequired(especialidad, true);
+      }
+    }
+
+    if (rolEl) {
+      rolEl.addEventListener('change', applyRole);
+      applyRole();
+    }
+  })();
+</script>
 {% endblock %}
 
 {% block footer %}

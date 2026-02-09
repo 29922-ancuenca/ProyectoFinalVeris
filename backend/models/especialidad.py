@@ -83,6 +83,116 @@ class Especialidad:
             "</div>"
         )
 
+    def _dias_selector(self, selected: str, disabled: bool) -> str:
+        """UI de selección de días mediante checkboxes.
+
+        Guarda en POST múltiples valores con name="Dias" y valores: L,M,X,J,V,S,D
+        """
+
+        selected_set = {c for c in (selected or "") if c in "LMXJV"}
+        dis_attr = " disabled" if disabled else ""
+
+        # Orden y etiquetas
+        days = [
+            ("L", "Lunes"),
+            ("M", "Martes"),
+            ("X", "Miércoles"),
+            ("J", "Jueves"),
+            ("V", "Viernes"),
+        ]
+
+        items = ""
+        for code, label in days:
+            checked = " checked" if code in selected_set else ""
+            cid = f"dias_{code}"
+            items += (
+                '<div class="col-6 col-md-4">'
+                '<div class="form-check">'
+                f'<input class="form-check-input" type="checkbox" id="{html.escape(cid)}" name="Dias" value="{html.escape(code)}"{checked}{dis_attr}>'
+                f'<label class="form-check-label" for="{html.escape(cid)}">{html.escape(label)}</label>'
+                "</div>"
+                "</div>"
+            )
+
+        buttons = ""
+        script = ""
+        if not disabled:
+            buttons = (
+                '<div class="mt-3 d-flex gap-2">'
+                '<button type="button" class="btn btn-outline-primary btn-sm" id="btnDiasLV">Lunes a Viernes</button>'
+                '<button type="button" class="btn btn-outline-danger btn-sm" id="btnDiasClear">Limpiar</button>'
+                "</div>"
+            )
+            script = (
+                "<script>\n"
+                "document.addEventListener('DOMContentLoaded', function () {\n"
+                "  var btnLV = document.getElementById('btnDiasLV');\n"
+                "  var btnClr = document.getElementById('btnDiasClear');\n"
+                "  function setDias(codes) {\n"
+                "    var set = {};\n"
+                "    (codes || []).forEach(function (c) { set[c] = true; });\n"
+                "    document.querySelectorAll('input[name=\"Dias\"]').forEach(function (el) {\n"
+                "      el.checked = !!set[el.value];\n"
+                "    });\n"
+                "  }\n"
+                "  if (btnLV) btnLV.addEventListener('click', function () { setDias(['L','M','X','J','V']); });\n"
+                "  if (btnClr) btnClr.addEventListener('click', function () { setDias([]); });\n"
+                "});\n"
+                "</script>"
+            )
+
+        return (
+            '<div class="mb-3">'
+            '<label class="form-label">Días de Atención</label>'
+            '<div class="card shadow-sm">'
+            '<div class="card-body">'
+            '<div class="row g-2">'
+            f"{items}"
+            "</div>"
+            f"{buttons}"
+            "</div>"
+            "</div>"
+            f"{script}"
+            "</div>"
+        )
+
+    def _fmt_time_value(self, value: Any) -> str:
+        """Convierte valores TIME de MySQL a formato válido para <input type="time"> (HH:MM).
+
+        Algunos conectores devuelven TIME como:
+        - datetime.time
+        - str '08:00:00', '8:00:00', '08:00', '8:00'
+        """
+
+        if value is None:
+            return ""
+
+        # datetime.time
+        if hasattr(value, "hour") and hasattr(value, "minute"):
+            try:
+                hh = int(getattr(value, "hour"))
+                mm = int(getattr(value, "minute"))
+                return f"{hh:02d}:{mm:02d}"
+            except Exception:
+                pass
+
+        s = str(value).strip()
+        if not s:
+            return ""
+
+        # Si viene con segundos, recortar
+        # Acepta H:MM:SS o HH:MM:SS
+        parts = s.split(":")
+        if len(parts) >= 2:
+            try:
+                hh = int(parts[0])
+                mm = int(parts[1])
+                return f"{hh:02d}:{mm:02d}"
+            except Exception:
+                return ""
+
+        return ""
+
     def get_list(self) -> str:
         cur = self.cn.cursor(dictionary=True)
         cur.execute(self.sql_list)
@@ -140,26 +250,18 @@ class Especialidad:
             for k in values:
                 values[k] = "" if row.get(k) is None else str(row.get(k))
 
-        # Ajustar formato de hora de HH:MM:SS a HH:MM para los inputs type="time"
-        def _fmt_time(v: str) -> str:
-            v = (v or "").strip()
-            # Si viene como 08:00:00 desde MySQL, recortar a 08:00
-            if len(v) == 8 and v[2] == ":" and v[5] == ":":
-                return v[:5]
-            return v
-
-        values["Franja_HI"] = _fmt_time(values["Franja_HI"])
-        values["Franja_HF"] = _fmt_time(values["Franja_HF"])
+        values["Franja_HI"] = self._fmt_time_value(values["Franja_HI"])
+        values["Franja_HF"] = self._fmt_time_value(values["Franja_HF"])
 
         d = self._d_encode(op, id)
         form = ""
         # No mostrar IdEsp en el formulario (se maneja internamente con d)
         form += self._input("Descripcion", "Descripcion", values["Descripcion"], False)
-        form += self._input("Dias", "Dias", values["Dias"], False)
+        form += self._dias_selector(values["Dias"], False)
         form += self._input("Franja_HI", "Franja_HI", values["Franja_HI"], False, "time")
         form += self._input("Franja_HF", "Franja_HF", values["Franja_HF"], False, "time")
 
-        title = "Nueva Especialidad" if is_new else f"Actualizar Especialidad #{id}"
+        title = "Nueva Especialidad" if is_new else "Actualizar Especialidad"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -178,24 +280,18 @@ class Especialidad:
         if not row:
             return self._msg_error("Registro no encontrado")
 
-        def _fmt_time(v: str) -> str:
-            v = (v or "").strip()
-            if len(v) == 8 and v[2] == ":" and v[5] == ":":
-                return v[:5]
-            return v
-
-        franja_hi = _fmt_time(str(row.get("Franja_HI", "")))
-        franja_hf = _fmt_time(str(row.get("Franja_HF", "")))
+        franja_hi = self._fmt_time_value(row.get("Franja_HI"))
+        franja_hf = self._fmt_time_value(row.get("Franja_HF"))
 
         form = ""
         # No mostrar IdEsp en detalle
         form += self._input("Descripcion", "Descripcion", str(row.get("Descripcion", "")), True)
-        form += self._input("Dias", "Dias", str(row.get("Dias", "")), True)
+        form += self._dias_selector(str(row.get("Dias", "")), True)
         form += self._input("Franja_HI", "Franja_HI", franja_hi, True, "time")
         form += self._input("Franja_HF", "Franja_HF", franja_hf, True, "time")
 
         return (
-            f"<h2 class='mb-3'>Detalle Especialidad #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Especialidad</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
@@ -210,9 +306,27 @@ class Especialidad:
             return self._msg_error("Parámetro d inválido")
 
         descripcion = (form_data.get("Descripcion") or "").strip()
-        dias = (form_data.get("Dias") or "").strip()
+        # Nuevo UI: checkboxes con name="Dias" (multi-valor)
+        selected_days = []
+        try:
+            selected_days = list(form_data.getlist("Dias"))  # type: ignore[attr-defined]
+        except Exception:
+            selected_days = []
+
+        # Compatibilidad: si por alguna razón viene como texto
+        dias_text = (form_data.get("Dias") or "").strip()
+
+        order = ["L", "M", "X", "J", "V"]
+        if selected_days:
+            selected_set = {str(x).strip().upper() for x in selected_days}
+            dias = "".join([c for c in order if c in selected_set])
+        else:
+            dias = "".join([c for c in order if c in (dias_text or "").upper()])
         franja_hi = (form_data.get("Franja_HI") or "").strip()
         franja_hf = (form_data.get("Franja_HF") or "").strip()
+
+        if not dias:
+            return self._msg_error("Debe seleccionar al menos un día de atención")
 
         try:
             cur = self.cn.cursor()

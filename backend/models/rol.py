@@ -143,7 +143,7 @@ class Rol:
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Accion", "Accion", values["Accion"], False)
 
-        title = "Nuevo Rol" if is_new else f"Actualizar Rol #{id}"
+        title = "Nuevo Rol" if is_new else f"Actualizar Rol"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -168,7 +168,7 @@ class Rol:
         form += self._input("Accion", "Accion", str(row.get("Accion", "")), True)
 
         return (
-            f"<h2 class='mb-3'>Detalle Rol #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Rol</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"

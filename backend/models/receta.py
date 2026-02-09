@@ -162,7 +162,7 @@ class Receta:
         form += self._input("IdMedicamento", "IdMedicamento", values["IdMedicamento"], False, "number")
         form += self._input("Cantidad", "Cantidad", values["Cantidad"], False, "number")
 
-        title = "Nueva Receta" if is_new else f"Actualizar Receta #{id}"
+        title = "Nueva Receta" if is_new else f"Actualizar Receta"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -188,7 +188,7 @@ class Receta:
         form += self._input("Cantidad", "Cantidad", str(row.get("Cantidad", "")), True, "number")
 
         return (
-            f"<h2 class='mb-3'>Detalle Receta #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Receta</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"

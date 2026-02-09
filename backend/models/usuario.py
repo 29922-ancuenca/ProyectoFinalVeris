@@ -104,6 +104,31 @@ class Usuario:
             "</div>"
         )
 
+    def _select(self, name: str, label: str, options: List[Dict[str, Any]], selected: str, disabled: bool) -> str:
+        dis = " disabled" if disabled else ""
+        out = '<div class="mb-3">'
+        out += f'<label class="form-label" for="{html.escape(name)}">{html.escape(label)}</label>'
+        out += f'<select class="form-select" id="{html.escape(name)}" name="{html.escape(name)}"{dis}>'
+        out += "<option value=''>Seleccione...</option>"
+        for opt in options:
+            vid = str(opt.get("IdRol", ""))
+            vname = str(opt.get("Nombre", ""))
+            sel = " selected" if vid and vid == (selected or "") else ""
+            out += f"<option value='{html.escape(vid)}'{sel}>{html.escape(vname)}</option>"
+        out += "</select></div>"
+        return out
+
+    def _get_roles_medico_paciente(self) -> List[Dict[str, Any]]:
+        """Retorna roles para asignación de usuarios (solo Médico=2 y Paciente=3)."""
+
+        cur = self.cn.cursor(dictionary=True)
+        cur.execute(
+            "SELECT IdRol, Nombre FROM roles WHERE IdRol IN (2,3) ORDER BY IdRol"
+        )
+        rows: List[Dict[str, Any]] = cur.fetchall() or []
+        cur.close()
+        return rows
+
     # ----------------------------- CRUD methods --------------------------------
     def get_list(self) -> str:
         cur = self.cn.cursor(dictionary=True)
@@ -169,9 +194,11 @@ class Usuario:
         # No mostrar IdUsuario en el formulario (se maneja internamente con d)
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Password", "Password", values["Password"], False, "password")
-        form += self._input("Rol", "Rol", values["Rol"], False)
 
-        title = "Nuevo Usuario" if is_new else f"Actualizar Usuario #{id}"
+        roles = self._get_roles_medico_paciente()
+        form += self._select("Rol", "Rol", roles, values["Rol"], False)
+
+        title = "Nuevo Usuario" if is_new else f"Actualizar Usuario"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -194,10 +221,10 @@ class Usuario:
         # No mostrar IdUsuario en detalle
         form += self._input("Nombre", "Nombre", str(row.get("Nombre", "")), True)
         form += self._input("Password", "Password", str(row.get("Password", "")), True, "password")
-        form += self._input("Rol", "Rol", str(row.get("Rol", "")), True)
+        form += self._input("Rol", "Rol", str(row.get("NombreRol", "")), True)
 
         return (
-            f"<h2 class='mb-3'>Detalle Usuario #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Usuario</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
@@ -214,6 +241,9 @@ class Usuario:
         nombre = (form_data.get("Nombre") or "").strip()
         password = (form_data.get("Password") or "").strip()
         rol = (form_data.get("Rol") or "").strip()
+
+        if rol not in ("2", "3"):
+            return self._msg_error("Rol inválido: seleccione Médico o Paciente")
 
         try:
             cur = self.cn.cursor()

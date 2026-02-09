@@ -199,7 +199,7 @@ class Consulta:
         form += self._input("HF", "HF", values["HF"], False, "time")
         form += self._textarea("Diagnostico", "Diagnostico", values["Diagnostico"], False)
 
-        title = "Nueva Consulta" if is_new else f"Actualizar Consulta #{id}"
+        title = "Nueva Consulta" if is_new else "Actualizar Consulta"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -228,7 +228,7 @@ class Consulta:
         form += self._textarea("Diagnostico", "Diagnostico", str(row.get("Diagnostico", "")), True)
 
         return (
-            f"<h2 class='mb-3'>Detalle Consulta #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Consulta</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"

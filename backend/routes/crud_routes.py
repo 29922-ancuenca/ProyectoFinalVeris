@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import calendar as pycalendar
+from pathlib import Path
 from datetime import date, datetime, timedelta
 
 from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash, session
+from werkzeug.utils import secure_filename
 
 from database.connection import get_connection
 
@@ -298,9 +300,133 @@ def logout():
 
 @bp.route("/register", methods=["GET", "POST"], strict_slashes=False)
 def register():
-    if request.method == "POST":
-        return render_template("register.html")
-    return render_template("register.html")
+    def load_form_data():
+        with get_connection(current_app) as cn:
+            cur = cn.cursor(dictionary=True)
+            cur.execute("SELECT IdRol, Nombre FROM roles WHERE IdRol IN (2,3) ORDER BY IdRol")
+            roles = cur.fetchall() or []
+            cur.execute("SELECT IdEsp, Descripcion FROM especialidades ORDER BY Descripcion")
+            especialidades = cur.fetchall() or []
+            cur.close()
+        return roles, especialidades
+
+    if request.method == "GET":
+        roles, especialidades = load_form_data()
+        return render_template("register.html", roles=roles, especialidades=especialidades)
+
+    # POST
+    username = (request.form.get("UserName") or "").strip()
+    password = (request.form.get("Password") or "").strip()
+    rol_s = (request.form.get("Rol") or "").strip()
+    try:
+        rol = int(rol_s)
+    except Exception:
+        rol = 0
+
+    roles, especialidades = load_form_data()
+
+    if not username or not password:
+        flash("Usuario y contraseña son obligatorios", "danger")
+        return render_template("register.html", roles=roles, especialidades=especialidades)
+
+    if rol not in (2, 3):
+        flash("Debe seleccionar un rol (Médico o Paciente)", "danger")
+        return render_template("register.html", roles=roles, especialidades=especialidades)
+
+    # Perfil común
+    nombre_perfil = (request.form.get("NombrePerfil") or "").strip()
+    if not nombre_perfil:
+        flash("El nombre completo es obligatorio", "danger")
+        return render_template("register.html", roles=roles, especialidades=especialidades)
+
+    # Foto opcional
+    foto_filename = ""
+    try:
+        file = request.files.get("Foto")  # type: ignore[attr-defined]
+    except Exception:
+        file = None
+
+    filename_raw = (getattr(file, "filename", "") or "") if file else ""
+    if file and filename_raw:
+        filename = secure_filename(filename_raw)
+        if filename:
+            upload_dir = Path(current_app.static_folder) / "img" / "usuarios"  # type: ignore[attr-defined]
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            file_path = upload_dir / filename
+            file.save(str(file_path))
+            foto_filename = filename
+
+    try:
+        with get_connection(current_app) as cn:
+            cur = cn.cursor(dictionary=True)
+            # Usuario único por Nombre
+            cur.execute("SELECT 1 FROM usuarios WHERE Nombre=%s LIMIT 1", (username,))
+            if cur.fetchone():
+                cur.close()
+                flash("Ese usuario ya existe", "danger")
+                return render_template("register.html", roles=roles, especialidades=especialidades)
+
+            # Insert usuario
+            cur2 = cn.cursor()
+            cur2.execute("INSERT INTO usuarios(Nombre, Password, Rol) VALUES(%s,%s,%s)", (username, password, rol))
+            user_id = int(cur2.lastrowid)
+            cur2.close()
+
+            if rol == 3:
+                cedula = (request.form.get("Cedula") or "").strip()
+                edad_s = (request.form.get("Edad") or "").strip()
+                genero = (request.form.get("Genero") or "").strip()
+                estatura_s = (request.form.get("Estatura_cm") or "").strip()
+                peso_s = (request.form.get("Peso_kg") or "").strip()
+
+                try:
+                    edad = int(edad_s) if edad_s else None
+                except Exception:
+                    edad = None
+                try:
+                    estatura = float(estatura_s) if estatura_s else None
+                except Exception:
+                    estatura = None
+                try:
+                    peso = float(peso_s) if peso_s else None
+                except Exception:
+                    peso = None
+
+                if not cedula or edad is None or not genero:
+                    cn.rollback()
+                    cur.close()
+                    flash("Complete los datos obligatorios del Paciente", "danger")
+                    return render_template("register.html", roles=roles, especialidades=especialidades)
+
+                cur.execute(
+                    "INSERT INTO pacientes(IdUsuario, Nombre, Cedula, Edad, Genero, `Estatura (cm)`, `Peso (kg)`, Foto) "
+                    "VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (user_id, nombre_perfil, cedula, edad, genero, estatura, peso, foto_filename),
+                )
+                cn.commit()
+                cur.close()
+                flash("Registro de Paciente creado correctamente", "success")
+                return redirect(url_for("crud.login"))
+
+            # rol == 2 (Médico)
+            especialidad = (request.form.get("Especialidad") or "").strip()
+            if not especialidad:
+                cn.rollback()
+                cur.close()
+                flash("Debe seleccionar una especialidad", "danger")
+                return render_template("register.html", roles=roles, especialidades=especialidades)
+
+            cur.execute(
+                "INSERT INTO medicos(Nombre, Especialidad, IdUsuario, Foto) VALUES(%s,%s,%s,%s)",
+                (nombre_perfil, especialidad, user_id, foto_filename),
+            )
+            cn.commit()
+            cur.close()
+            flash("Registro de Médico creado correctamente", "success")
+            return redirect(url_for("crud.login"))
+    except Exception as ex:
+        flash(f"Error al registrar: {ex}", "danger")
+        return render_template("register.html", roles=roles, especialidades=especialidades)
 
 
 @bp.route("/usuarios", methods=["GET", "POST"], strict_slashes=False)

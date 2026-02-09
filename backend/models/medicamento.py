@@ -142,7 +142,7 @@ class Medicamento:
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Tipo", "Tipo", values["Tipo"], False)
 
-        title = "Nuevo Medicamento" if is_new else f"Actualizar Medicamento #{id}"
+        title = "Nuevo Medicamento" if is_new else "Actualizar Medicamento"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post'>"
@@ -167,7 +167,7 @@ class Medicamento:
         form += self._input("Tipo", "Tipo", str(row.get("Tipo", "")), True)
 
         return (
-            f"<h2 class='mb-3'>Detalle Medicamento #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Medicamento</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"

@@ -110,6 +110,45 @@ class Paciente:
             "</div>"
         )
 
+    def _select(self, name: str, label: str, options: list[dict[str, Any]], selected: str, disabled: bool) -> str:
+        dis = " disabled" if disabled else ""
+        html_out = '<div class="mb-3">'
+        html_out += f'<label class="form-label" for="{html.escape(name)}">{html.escape(label)}</label>'
+        html_out += f'<select class="form-select" id="{html.escape(name)}" name="{html.escape(name)}"{dis}>'
+        html_out += "<option value=''>Seleccione...</option>"
+        for opt in options:
+            oid = str(opt.get("IdUsuario", ""))
+            oname = str(opt.get("Nombre", ""))
+            sel = " selected" if oid and oid == (selected or "") else ""
+            html_out += f"<option value='{html.escape(oid)}'{sel}>{html.escape(oname)}</option>"
+        html_out += "</select></div>"
+        return html_out
+
+    def _get_usuarios_disponibles_paciente(self, include_id: int | None = None) -> list[dict[str, Any]]:
+        """Usuarios con rol Paciente (3) que no estén usados por paciente ni médico."""
+
+        cur = self.cn.cursor(dictionary=True)
+        if include_id:
+            cur.execute(
+                "SELECT u.IdUsuario, u.Nombre FROM usuarios u WHERE u.Rol=3 AND u.IdUsuario=%s",
+                (include_id,),
+            )
+            row = cur.fetchone()
+            cur.close()
+            return [row] if row else []
+
+        cur.execute(
+            "SELECT u.IdUsuario, u.Nombre "
+            "FROM usuarios u "
+            "LEFT JOIN pacientes p ON u.IdUsuario = p.IdUsuario "
+            "LEFT JOIN medicos m ON u.IdUsuario = m.IdUsuario "
+            "WHERE u.Rol=3 AND p.IdUsuario IS NULL AND m.IdUsuario IS NULL "
+            "ORDER BY u.Nombre"
+        )
+        rows = cur.fetchall() or []
+        cur.close()
+        return rows
+
     def get_list(self) -> str:
         cur = self.cn.cursor(dictionary=True)
         cur.execute(self.sql_list)
@@ -203,12 +242,27 @@ class Paciente:
 
         d = self._d_encode(op, id)
         form = ""
-        # No mostrar IdPaciente ni IdUsuario en el formulario (se manejan internamente)
-        # IdUsuario viaja como campo oculto para mantener la relación al editar.
-        if values["IdUsuario"]:
-            form += (
-                f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
-            )
+
+        # Usuario asociado
+        if is_new:
+            usuarios = self._get_usuarios_disponibles_paciente()
+            if not usuarios:
+                form += (
+                    "<div class='alert alert-warning' role='alert'>"
+                    "No hay usuarios con rol Paciente disponibles (sin asignación previa)."
+                    "</div>"
+                )
+            form += self._select("IdUsuario", "Usuario", usuarios, values["IdUsuario"], False)
+        else:
+            try:
+                include_id = int(values["IdUsuario"]) if values["IdUsuario"] else None
+            except Exception:
+                include_id = None
+            usuarios = self._get_usuarios_disponibles_paciente(include_id=include_id)
+            form += self._select("IdUsuario", "Usuario", usuarios, values["IdUsuario"], True)
+            if values["IdUsuario"]:
+                form += f"<input type='hidden' name='IdUsuario' value='{html.escape(values['IdUsuario'])}' />"
+
         form += self._input("Nombre", "Nombre", values["Nombre"], False)
         form += self._input("Cedula", "Cedula", values["Cedula"], False)
         form += self._input("Edad", "Edad", values["Edad"], False, "number")
@@ -239,7 +293,7 @@ class Paciente:
             f"<input type='hidden' name='FotoActual' value='{html.escape(values['Foto'])}' />"
         )
 
-        title = "Nuevo Paciente" if is_new else f"Actualizar Paciente #{id}"
+        title = "Nuevo Paciente" if is_new else f"Actualizar Paciente"
         return (
             f"<h2 class='mb-3'>{html.escape(title)}</h2>"
             f"<form method='post' enctype='multipart/form-data'>"
@@ -284,7 +338,7 @@ class Paciente:
             form += self._input("Foto", "Foto", "Sin foto", True)
 
         return (
-            f"<h2 class='mb-3'>Detalle Paciente #{id}</h2>"
+            f"<h2 class='mb-3'>Detalle Paciente</h2>"
             f"<form>"
             f"{form}"
             f"<a class='btn btn-outline-secondary' href='{self.path}'>Volver</a>"
@@ -306,6 +360,32 @@ class Paciente:
             v = (form_data.get(name) or "").strip()
             return float(v) if v else None
 
+        id_usuario = _i("IdUsuario")
+        if not id_usuario:
+            return self._msg_error("Debe seleccionar un usuario (rol Paciente)")
+
+        # Validar que el usuario sea rol Paciente y no esté usado (en creación)
+        curv = self.cn.cursor(dictionary=True)
+        curv.execute(
+            "SELECT u.IdUsuario FROM usuarios u WHERE u.IdUsuario=%s AND u.Rol=3",
+            (id_usuario,),
+        )
+        if not curv.fetchone():
+            curv.close()
+            return self._msg_error("El usuario seleccionado no es válido para Paciente")
+
+        if op == "new":
+            curv.execute("SELECT 1 FROM pacientes WHERE IdUsuario=%s LIMIT 1", (id_usuario,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("El usuario seleccionado ya está asignado a un paciente")
+            curv.execute("SELECT 1 FROM medicos WHERE IdUsuario=%s LIMIT 1", (id_usuario,))
+            if curv.fetchone():
+                curv.close()
+                return self._msg_error("El usuario seleccionado ya está asignado a un médico")
+
+        curv.close()
+
         # Manejo de la foto: si se sube una nueva, se guarda en static/img/usuarios.
         # Si no, se mantiene la foto actual.
         existing_foto = (form_data.get("FotoActual") or form_data.get("Foto") or "").strip()
@@ -316,8 +396,9 @@ class Paciente:
         except Exception:
             file = None
 
-        if file and getattr(file, "filename", ""):
-            filename = secure_filename(file.filename)
+        filename_raw = (getattr(file, "filename", "") or "") if file else ""
+        if file and filename_raw:
+            filename = secure_filename(filename_raw)
             if filename:
                 upload_dir = Path(current_app.static_folder) / "img" / "usuarios"  # type: ignore[attr-defined]
                 upload_dir.mkdir(parents=True, exist_ok=True)
@@ -326,7 +407,7 @@ class Paciente:
                 foto_filename = filename
 
         payload = (
-            _i("IdUsuario"),
+            id_usuario,
             (form_data.get("Nombre") or "").strip(),
             (form_data.get("Cedula") or "").strip(),
             _i("Edad"),
