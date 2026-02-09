@@ -62,6 +62,20 @@
             <tr><th>Género</th><td>{{ paciente.Genero }}</td></tr>
             <tr><th>Estatura (cm)</th><td>{{ paciente["Estatura (cm)"] }}</td></tr>
             <tr><th>Peso (kg)</th><td>{{ paciente["Peso (kg)"] }}</td></tr>
+            <tr>
+              <th>Foto</th>
+              <td>
+                {% if paciente.Foto %}
+                  <img src="{{ url_for('static', filename='img/usuarios/' ~ paciente.Foto) }}"
+                       alt="{{ paciente.Nombre }}"
+                       class="img-thumbnail"
+                       style="max-width: 120px; height: auto; object-fit: cover;"
+                       onerror="this.style.display='none'">
+                {% else %}
+                  <span class="text-muted">Sin foto</span>
+                {% endif %}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -107,7 +121,9 @@
         <table class="table table-bordered table-striped">
           <thead>
             <tr>
+              <th>Médico</th>
               <th>Fecha consulta</th>
+              <th>Diagnóstico</th>
               <th>Medicamento</th>
               <th>Cantidad</th>
             </tr>
@@ -115,7 +131,9 @@
           <tbody>
             {% for r in recetas %}
             <tr>
+              <td>{{ r.NombreMedico }}</td>
               <td>{{ r.FechaConsulta }}</td>
+              <td>{{ r.Diagnostico }}</td>
               <td>{{ r.NombreMedicamento }}</td>
               <td>{{ r.Cantidad }}</td>
             </tr>

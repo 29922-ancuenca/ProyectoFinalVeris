@@ -55,6 +55,20 @@
           <tbody>
             <tr><th>Nombre</th><td>{{ medico.Nombre }}</td></tr>
             <tr><th>Especialidad</th><td>{{ medico.NombreEspecialidad }}</td></tr>
+            <tr>
+              <th>Foto</th>
+              <td>
+                {% if medico.Foto %}
+                  <img src="{{ url_for('static', filename='img/usuarios/' ~ medico.Foto) }}"
+                       alt="{{ medico.Nombre }}"
+                       class="img-thumbnail"
+                       style="max-width: 120px; height: auto; object-fit: cover;"
+                       onerror="this.style.display='none'">
+                {% else %}
+                  <span class="text-muted">Sin foto</span>
+                {% endif %}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -102,6 +116,7 @@
             <tr>
               <th>Fecha consulta</th>
               <th>Paciente</th>
+              <th>Diagnóstico</th>
               <th>Medicamento</th>
               <th>Cantidad</th>
             </tr>
@@ -111,6 +126,7 @@
             <tr>
               <td>{{ r.FechaConsulta }}</td>
               <td>{{ r.NombrePaciente }}</td>
+              <td>{{ r.Diagnostico }}</td>
               <td>{{ r.NombreMedicamento }}</td>
               <td>{{ r.Cantidad }}</td>
             </tr>

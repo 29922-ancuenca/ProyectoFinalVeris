@@ -328,9 +328,11 @@ def pacientes():
                 # Mis recetas vinculadas a las consultas del paciente
                 cur.execute(
                     "SELECT r.IdReceta, r.Cantidad, "
-                    "c.FechaConsulta, m2.Nombre AS NombreMedicamento "
+                    "c.FechaConsulta, c.Diagnostico, "
+                    "med.Nombre AS NombreMedico, m2.Nombre AS NombreMedicamento "
                     "FROM recetas r "
                     "LEFT JOIN consultas c ON r.IdConsulta = c.IdConsulta "
+                    "LEFT JOIN medicos med ON c.IdMedico = med.IdMedico "
                     "LEFT JOIN medicamentos m2 ON r.IdMedicamento = m2.IdMedicamento "
                     "WHERE c.IdPaciente=%s",
                     (paciente_id,),
@@ -408,7 +410,8 @@ def medicos():
             # Recetas emitidas por este médico (a través de sus consultas)
             cur.execute(
                 "SELECT r.IdReceta, r.Cantidad, "
-                "c.FechaConsulta, m2.Nombre AS NombreMedicamento, p.Nombre AS NombrePaciente "
+                "c.FechaConsulta, c.Diagnostico, "
+                "m2.Nombre AS NombreMedicamento, p.Nombre AS NombrePaciente "
                 "FROM recetas r "
                 "LEFT JOIN consultas c ON r.IdConsulta = c.IdConsulta "
                 "LEFT JOIN medicamentos m2 ON r.IdMedicamento = m2.IdMedicamento "
