@@ -6,10 +6,6 @@ from typing import Any, Dict, List, Tuple
 
 
 class Rol:
-    """CRUD POO para la tabla `roles`.
-
-    Tabla: roles(IdRol, Nombre, Accion)
-    """
 
     table_name = "roles"
     pk = "IdRol"

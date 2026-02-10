@@ -10,10 +10,6 @@ from werkzeug.utils import secure_filename
 
 
 class Medico:
-    """CRUD POO para la tabla `medicos`.
-
-    Tabla: medicos(IdMedico, Nombre, Especialidad, IdUsuario, Foto)
-    """
 
     table_name = "medicos"
     pk = "IdMedico"

@@ -10,15 +10,6 @@ from werkzeug.utils import secure_filename
 
 
 class Paciente:
-    """CRUD POO para la tabla `pacientes`.
-
-    Tabla: pacientes(
-        IdPaciente, IdUsuario, Nombre, Cedula, Edad, Genero,
-        Estatura (cm), Peso (kg), Foto
-    )
-
-    Nota: columnas con espacios/paréntesis se consultan con backticks.
-    """
 
     table_name = "pacientes"
     pk = "IdPaciente"

@@ -6,10 +6,6 @@ from typing import Any, Dict, List, Tuple
 
 
 class Usuario:
-    """CRUD POO para la tabla `usuarios`.
-
-    Tabla: usuarios(IdUsuario, Nombre, Password, Rol)
-    """
 
     table_name = "usuarios"
     pk = "IdUsuario"
