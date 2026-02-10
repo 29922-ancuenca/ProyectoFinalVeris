@@ -399,6 +399,152 @@ footer {
   border: 2px solid #e9ecef;
 }
 
+/* =========================================================
+   HERO PÁGINA PRINCIPAL
+   ========================================================= */
+
+.hero-wrap {
+  padding: 3rem 0;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+}
+
+.hero img {
+  flex: 1 1 320px;
+  max-width: 520px;
+  width: 100%;
+  border-radius: 1.5rem;
+  object-fit: cover;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.hero-content {
+  flex: 1 1 280px;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-card {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hero-pill i {
+  font-size: 1rem;
+}
+
+.hero-title {
+  margin-top: 1.2rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0b2347;
+}
+
+.hero-sub {
+  margin-top: 0.75rem;
+  color: #444;
+  font-size: 0.98rem;
+}
+
+.info-row {
+  margin-top: 2.5rem;
+}
+
+.info-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  padding: 1.5rem 1.3rem;
+  text-align: left;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  height: 100%;
+}
+
+.info-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  margin-bottom: 0.8rem;
+  font-size: 1.3rem;
+}
+
+.info-title {
+  font-weight: 700;
+  color: #0b2347;
+  margin-bottom: 0.35rem;
+}
+
+.info-text {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+/* =========================================================
+   MÉTRICAS
+   ========================================================= */
+
+.stats {
+  padding: 2.5rem 0 3rem;
+  background: linear-gradient(135deg, #f1f4ff 0%, #ffffff 40%, #f6f9ff 100%);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.6rem;
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  font-size: 1.6rem;
+}
+
+.stat-num {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #0b2347;
+}
+
+.stat-title {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    text-align: left;
+  }
+
+  .hero-card {
+    padding: 1.5rem;
+  }
+}
+
 /*Estilos registro*/
 /* =========================================================
    ESTILOS FORMULARIO DE REGISTRO (register.html)
