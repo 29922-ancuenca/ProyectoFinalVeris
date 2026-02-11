@@ -7,10 +7,6 @@ import mysql.connector
 
 @contextmanager
 def get_connection(app=None):
-    """Context manager para conexión MySQL.
-
-    Lee credenciales desde app.config si se provee `app`.
-    """
 
     if app is None:
         raise RuntimeError("Se requiere `app` para leer config de DB")
