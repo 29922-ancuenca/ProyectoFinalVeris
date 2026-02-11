@@ -22,7 +22,49 @@ from models.usuario import Usuario
 bp = Blueprint("crud", __name__)
 
 
+def get_session_info() -> dict:
+    """Devuelve datos básicos de la sesión actual para usarlos en vistas/plantillas."""
+
+    return {
+        "user_id": session.get("user_id"),
+        "user_name": session.get("user_name"),
+        "user_role": session.get("user_role"),
+    }
+
+
+@bp.app_context_processor
+def inject_session_info() -> dict:
+    """Inyecta session_info en todas las plantillas renderizadas por este blueprint."""
+
+    return {"session_info": get_session_info()}
+
+
 _MAX_AGENDAR_FECHA = date(2030, 12, 31)
+
+
+def _rows_to_jsonable(rows: list[dict] | None) -> list[dict]:
+    """Convierte filas con date/datetime/timedelta a tipos serializables por JSON."""
+
+    if not rows:
+        return []
+
+    converted: list[dict] = []
+    for row in rows:
+        new_row: dict = {}
+        for k, v in row.items():
+            if isinstance(v, (date, datetime)):
+                new_row[k] = v.isoformat()
+            elif isinstance(v, timedelta):
+                # MySQL TIME puede llegar como timedelta: formatear a HH:MM:SS
+                total = int(v.total_seconds())
+                h = total // 3600
+                m = (total % 3600) // 60
+                s = total % 60
+                new_row[k] = f"{h:02d}:{m:02d}:{s:02d}"
+            else:
+                new_row[k] = v
+        converted.append(new_row)
+    return converted
 
 
 def _parse_int(value: str | None, default: int) -> int:
@@ -630,6 +672,22 @@ def admin():
         especialidades_html = handle_model(especialidades_model, module == "especialidades")
         medicamentos_html = handle_model(medicamentos_model, module == "medicamentos")
 
+        # Listado completo de pacientes en variable de sesión (para mostrarlo explícitamente)
+        cur = cn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM pacientes ORDER BY Nombre")
+        pacientes_rows = cur.fetchall() or []
+
+        # Listado completo de médicos en variable de sesión (para mostrarlo explícitamente)
+        cur.execute("SELECT * FROM medicos ORDER BY Nombre")
+        medicos_rows = cur.fetchall() or []
+        cur.close()
+
+        # Guardar los arreglos completos (listas de diccionarios) en la sesión
+        lista_pacientes = pacientes_rows
+        lista_medicos = medicos_rows
+        session["lista_pacientes"] = lista_pacientes
+        session["lista_medicos"] = lista_medicos
+
     # Reescribir enlaces para que las acciones sigan dentro de /admin
     usuarios_html = usuarios_html.replace("/usuarios?d=", "/admin?m=usuarios&d=")
     usuarios_html = usuarios_html.replace("href='/usuarios'", "href='/admin?m=usuarios'")
@@ -658,6 +716,8 @@ def admin():
         especialidades_html=especialidades_html,
         medicamentos_html=medicamentos_html,
         active_module=module,
+        lista_pacientes=lista_pacientes,
+        lista_medicos=lista_medicos,
     )
 
 
@@ -746,6 +806,11 @@ def pacientes():
                     (paciente_id,),
                 )
                 recetas = cur.fetchall() or []
+
+                # Guardar en sesión los listados del paciente (convertidos a tipos JSON‑serializables)
+                session["lista_consultas_paciente"] = _rows_to_jsonable(consultas)
+                session["lista_consultas_recibidas"] = _rows_to_jsonable(consultas_recibidas)
+                session["lista_recetas_paciente"] = _rows_to_jsonable(recetas)
 
             # Sección de agendar citas (solo lectura: se muestran especialidades y franjas)
             cur.execute("SELECT * FROM especialidades ORDER BY Descripcion")
@@ -1142,6 +1207,11 @@ def medicos():
             recetas = cur.fetchall() or []
 
             cur.close()
+
+        # Guardar en sesión los listados del médico (convertidos a tipos JSON‑serializables)
+        session["lista_consultas_medico"] = _rows_to_jsonable(consultas)
+        session["lista_consultas_realizadas"] = _rows_to_jsonable(consultas_realizadas)
+        session["lista_recetas_medico"] = _rows_to_jsonable(recetas)
 
         return render_template(
             "medico_dashboard.html",

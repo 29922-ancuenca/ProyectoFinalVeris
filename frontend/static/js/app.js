@@ -141,12 +141,17 @@ document.addEventListener("DOMContentLoaded", function () {
 		if (msg) window.VerisModal.alert(msg, 'Acción no permitida');
 	}
 
-	// Ocultar automáticamente mensajes flash (por ejemplo "Sesión cerrada")
+	// Ocultar automáticamente mensajes flash (por ejemplo "Sesión cerrada").
+	// No aplicar a alertas marcadas como fijas (alert-session-fixed o data-no-autoclose).
 	var alerts = document.querySelectorAll(".alert");
 	if (!alerts.length) return;
 
 	setTimeout(function () {
 		alerts.forEach(function (alert) {
+			// Saltar alertas marcadas como fijas
+			var isFixed = alert.classList.contains('alert-session-fixed') || alert.getAttribute('data-no-autoclose') === '1';
+			if (isFixed) return;
+
 			// Animación simple de desvanecimiento
 			alert.style.transition = "opacity 0.5s ease";
 			alert.style.opacity = "0";
@@ -158,7 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
 				}
 			}, 600);
 		});
-	}, 3000); // 3 segundos visibles
+	}, 3000); // 3 segundos visibles para alertas no fijas
 });
 
 // Confirmación global para enlaces y formularios

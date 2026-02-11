@@ -60,10 +60,24 @@
     </div>
 
     <div class="tab-pane fade {% if active_module == 'pacientes' %}show active{% endif %}" id="panel-pacientes" role="tabpanel" aria-labelledby="tab-pacientes">
+      {% set lp = session.get('lista_pacientes', []) %}
+      {% if lp %}
+      <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
+        <strong>Variable de sesión <code>lista_pacientes</code> (arreglo con todos los datos):</strong>
+        <pre class="mb-0">{{ lp | tojson }}</pre>
+      </div>
+      {% endif %}
       {{ pacientes_html|safe }}
     </div>
 
     <div class="tab-pane fade {% if active_module == 'medicos' %}show active{% endif %}" id="panel-medicos" role="tabpanel" aria-labelledby="tab-medicos">
+      {% set lm = session.get('lista_medicos', []) %}
+      {% if lm %}
+      <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
+        <strong>Variable de sesión <code>lista_medicos</code> (arreglo con todos los datos):</strong>
+        <pre class="mb-0">{{ lm | tojson }}</pre>
+      </div>
+      {% endif %}
       {{ medicos_html|safe }}
     </div>
 

@@ -26,6 +26,12 @@
 {% block content %}
 <main class="container my-4">
   <h2 class="mb-1 text-primary">Módulo Paciente</h2>
+  <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
+    <strong>Sesión actual:</strong>
+    Usuario = {{ session_info.user_name }},
+    IdUsuario = {{ session_info.user_id }},
+    Rol = {{ session_info.user_role }}
+  </div>
   {% if paciente %}
   <p class="mb-4 fw-semibold">Bienvenido, {{ paciente.Nombre }}</p>
   {% else %}
@@ -86,6 +92,13 @@
 
     <div class="tab-pane fade" id="mis-consultas" role="tabpanel" aria-labelledby="tab-consultas">
       {% if consultas %}
+      {% set lc = session.get('lista_consultas_paciente', []) %}
+      {% if lc %}
+      <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
+        <strong>Variable de sesión <code>lista_consultas_paciente</code> (arreglo con todos los datos):</strong>
+        <pre class="mb-0">{{ lc | tojson }}</pre>
+      </div>
+      {% endif %}
       <div class="table-responsive">
         <table class="table table-bordered table-striped">
           <thead>
@@ -148,7 +161,18 @@
 
     <div class="tab-pane fade" id="consultas-recibidas" role="tabpanel" aria-labelledby="tab-consultas-recibidas">
       {% if consultas_recibidas %}
+      <p class="mb-1"><strong>Paciente en sesión:</strong>
+        {% if paciente %}{{ paciente.Nombre }}{% else %}Desconocido{% endif %}
+        (usuario: {{ session_info.user_name }})
+      </p>
       <p class="text-muted">Listado de consultas recibidas con receta asignada.</p>
+      {% set lcr = session.get('lista_consultas_recibidas', []) %}
+      {% if lcr %}
+      <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
+        <strong>Variable de sesión <code>lista_consultas_recibidas</code> (arreglo con todos los datos):</strong>
+        <pre class="mb-0">{{ lcr | tojson }}</pre>
+      </div>
+      {% endif %}
       <div class="table-responsive">
         <table class="table table-bordered table-striped">
           <thead>
