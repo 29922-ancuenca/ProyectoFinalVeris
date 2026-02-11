@@ -63,8 +63,8 @@
       {% set lp = session.get('lista_pacientes', []) %}
       {% if lp %}
       <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-        <strong>Variable de sesión <code>lista_pacientes</code> (arreglo con todos los datos):</strong>
-        <pre class="mb-0">{{ lp | tojson }}</pre>
+        <strong>Variable de sesión <code>lista_pacientes</code></strong>
+        <pre class="mb-0">{{ lp | tojson(indent=2) }}</pre>
       </div>
       {% endif %}
       {{ pacientes_html|safe }}
@@ -74,8 +74,8 @@
       {% set lm = session.get('lista_medicos', []) %}
       {% if lm %}
       <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-        <strong>Variable de sesión <code>lista_medicos</code> (arreglo con todos los datos):</strong>
-        <pre class="mb-0">{{ lm | tojson }}</pre>
+        <strong>Variable de sesión <code>lista_medicos</code></strong>
+        <pre class="mb-0">{{ lm | tojson(indent=2) }}</pre>
       </div>
       {% endif %}
       {{ medicos_html|safe }}

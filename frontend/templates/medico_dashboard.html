@@ -88,8 +88,8 @@
       {% set lcm = session.get('lista_consultas_medico', []) %}
       {% if lcm %}
       <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-        <strong>Variable de sesión <code>lista_consultas_medico</code> (arreglo con todos los datos):</strong>
-        <pre class="mb-0">{{ lcm | tojson }}</pre>
+        <strong>Variable de sesión <code>lista_consultas_medico</code></strong>
+        <pre class="mb-0">{{ lcm | tojson(indent=2) }}</pre>
       </div>
       {% endif %}
       <div class="table-responsive">
@@ -170,8 +170,8 @@
       {% set lcr_m = session.get('lista_consultas_realizadas', []) %}
       {% if lcr_m %}
       <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-        <strong>Variable de sesión <code>lista_consultas_realizadas</code> (arreglo con todos los datos):</strong>
-        <pre class="mb-0">{{ lcr_m | tojson }}</pre>
+        <strong>Variable de sesión <code>lista_consultas_realizadas</code></strong>
+        <pre class="mb-0">{{ lcr_m | tojson(indent=2) }}</pre>
       </div>
       {% endif %}
       <div class="table-responsive">

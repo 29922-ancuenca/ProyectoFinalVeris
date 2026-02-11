@@ -400,6 +400,23 @@ footer {
 }
 
 /* =========================================================
+   Visualización de variables de sesión (debug)
+   Evita barras de desplazamiento y muestra el contenido hacia abajo
+   ========================================================= */
+
+.alert-session-fixed pre {
+  max-height: none !important;
+  overflow: visible !important;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.75rem;
+}
+
+.alert-session-fixed code {
+  font-size: 0.8rem;
+}
+
+/* =========================================================
    HERO PÁGINA PRINCIPAL
    ========================================================= */
 
