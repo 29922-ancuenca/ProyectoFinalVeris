@@ -26,12 +26,6 @@
 {% block content %}
 <main class="container my-4">
   <h2 class="mb-1 text-primary">Módulo Paciente</h2>
-  <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-    <strong>Sesión actual:</strong>
-    Usuario = {{ session_info.user_name }},
-    IdUsuario = {{ session_info.user_id }},
-    Rol = {{ session_info.user_role }}
-  </div>
   {% if paciente %}
   <p class="mb-4 fw-semibold">Bienvenido, {{ paciente.Nombre }}</p>
   {% else %}

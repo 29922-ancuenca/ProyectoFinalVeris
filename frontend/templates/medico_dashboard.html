@@ -26,12 +26,6 @@
 {% block content %}
 <main class="container my-4">
   <h2 class="mb-1 text-primary">Módulo Médico</h2>
-  <div class="alert alert-info alert-session-fixed py-2 small mb-3" data-no-autoclose="1">
-    <strong>Sesión actual:</strong>
-    Usuario = {{ session_info.user_name }},
-    IdUsuario = {{ session_info.user_id }},
-    Rol = {{ session_info.user_role }}
-  </div>
   {% if medico %}
   <p class="mb-4 fw-semibold">Bienvenido, {{ medico.Nombre }}</p>
   {% else %}
@@ -183,6 +177,7 @@
               <th>Hora inicio</th>
               <th>Hora fin</th>
               <th>Diagnóstico</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -193,6 +188,9 @@
               <td>{{ c.HI }}</td>
               <td>{{ c.HF }}</td>
               <td>{{ c.Diagnostico }}</td>
+              <td>
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('crud.siguiente_cita', id_consulta=c.IdConsulta) }}">Siguiente cita</a>
+              </td>
             </tr>
             {% endfor %}
           </tbody>

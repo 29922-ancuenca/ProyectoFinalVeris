@@ -770,24 +770,27 @@ def pacientes():
             consultas_recibidas = []
             recetas = []
             if paciente_id is not None:
-                cur.execute(
-                    "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
-                    "m.Nombre AS NombreMedico "
-                    "FROM consultas c "
-                    "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
-                    "WHERE c.IdPaciente=%s ORDER BY c.FechaConsulta DESC",
-                    (paciente_id,),
-                )
-                consultas = cur.fetchall() or []
-
-                # Consultas recibidas con receta asignada (indicador de consulta realizada)
+                # Consultas pendientes: sin diagnóstico real (vacío o marcado como 'Pendiente')
                 cur.execute(
                     "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
                     "m.Nombre AS NombreMedico "
                     "FROM consultas c "
                     "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
                     "WHERE c.IdPaciente=%s "
-                    "AND EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) "
+                    "AND (c.Diagnostico = '' OR c.Diagnostico = 'Pendiente') "
+                    "ORDER BY c.FechaConsulta DESC",
+                    (paciente_id,),
+                )
+                consultas = cur.fetchall() or []
+
+                # Consultas recibidas: aquellas que ya tienen un diagnóstico registrado (distinto de 'Pendiente')
+                cur.execute(
+                    "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
+                    "m.Nombre AS NombreMedico "
+                    "FROM consultas c "
+                    "LEFT JOIN medicos m ON c.IdMedico = m.IdMedico "
+                    "WHERE c.IdPaciente=%s "
+                    "AND c.Diagnostico NOT IN ('', 'Pendiente') "
                     "ORDER BY c.FechaConsulta DESC",
                     (paciente_id,),
                 )
@@ -1167,19 +1170,21 @@ def medicos():
             consultas_realizadas = []
             recetas = []
 
-            # Consultas realizadas por este médico
+            # Consultas pendientes por este médico (sin receta todavía)
             cur.execute(
                 "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
                 "EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) AS Atendida, "
                 "p.Nombre AS NombrePaciente "
                 "FROM consultas c "
                 "LEFT JOIN pacientes p ON c.IdPaciente = p.IdPaciente "
-                "WHERE c.IdMedico=%s ORDER BY c.FechaConsulta DESC",
+                "WHERE c.IdMedico=%s "
+                "AND NOT EXISTS (SELECT 1 FROM recetas r WHERE r.IdConsulta = c.IdConsulta) "
+                "ORDER BY c.FechaConsulta DESC",
                 (medico_id,),
             )
             consultas = cur.fetchall() or []
 
-            # Consultas realizadas con receta asignada (indicador de consulta realizada)
+            # Consultas realizadas con receta asignada (indicador de consulta atendida)
             cur.execute(
                 "SELECT c.IdConsulta, c.FechaConsulta, c.HI, c.HF, c.Diagnostico, "
                 "p.Nombre AS NombrePaciente "
